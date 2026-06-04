@@ -1,0 +1,34 @@
+#pragma once
+
+#include <Arduino.h>
+
+namespace Config {
+    
+    constexpr uint32_t SERIAL_BAUD = 115200;
+
+    // ESC PWM Pins
+    constexpr int MOTOR_1_PIN = 1; // TODO: Update this when we have wiring set up
+    constexpr int MOTOR_2_PIN = 2; // TODO: Update this when we have wiring set up
+    constexpr int MOTOR_3_PIN = 3; // TODO: Update this when we have wiring set up
+    constexpr int MOTOR_4_PIN = 4; // TODO: Update this when we have wiring set up
+
+    constexpr uint32_t MOTOR_PWM_FREQUENCY_HZ = 400;
+    constexpr int PWM_MIN_US = 1000;
+    constexpr int PWM_MAX_US = 2000;
+
+    // Angle Limits
+    constexpr float MAX_ROLL_ANGLE_DEG = 25f;
+    constexpr float MAX_PITCH_ANGLE_DEG = 25f;
+    constexpr float MAX_YAW_RATE_DEG_S = 180;
+
+    // PID Gain Settings
+    // We'll probably have PIDs for roll and pitch to hold the drone's attitude.
+    // There will likely be more here but for now I'll add parameters for just the angles (we need to tune these).
+    constexpr float ROLL_ANGLE_KP = 0f;
+    constexpr float ROLL_ANGLE_KI = 0f;
+    constexpr float ROLL_ANGLE_KD = 0f;
+
+    constexpr float PITCH_ANGLE_KP = 0f;
+    constexpr float PITCH_ANGLE_KI = 0f;
+    constexpr float PITCH_ANGLE_KD = 0f;
+}
