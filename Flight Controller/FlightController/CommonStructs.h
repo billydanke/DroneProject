@@ -31,7 +31,7 @@ struct GPSData {
     bool IsLocationFixed = false;
 };
 
-struct Attitude {
+struct Orientation {
     float RollDeg = 0.0f;
     float PitchDeg = 0.0f;
     float YawDeg = 0.0f;

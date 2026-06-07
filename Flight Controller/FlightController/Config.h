@@ -21,6 +21,9 @@ namespace Config {
     constexpr float MAX_PITCH_ANGLE_DEG = 25.0f;
     constexpr float MAX_YAW_RATE_DEG_S = 180.0f;
 
+    // MPU Orientation
+    constexpr int MPU_ADDRESS = 0x68;
+
     // PID Gain Settings
     // We'll probably have PIDs for roll and pitch to hold the drone's attitude.
     // There will likely be more here but for now I'll add parameters for just the angles (we need to tune these).
