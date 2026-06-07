@@ -17,18 +17,18 @@ namespace Config {
     constexpr int PWM_MAX_US = 2000;
 
     // Angle Limits
-    constexpr float MAX_ROLL_ANGLE_DEG = 25f;
-    constexpr float MAX_PITCH_ANGLE_DEG = 25f;
-    constexpr float MAX_YAW_RATE_DEG_S = 180;
+    constexpr float MAX_ROLL_ANGLE_DEG = 25.0f;
+    constexpr float MAX_PITCH_ANGLE_DEG = 25.0f;
+    constexpr float MAX_YAW_RATE_DEG_S = 180.0f;
 
     // PID Gain Settings
     // We'll probably have PIDs for roll and pitch to hold the drone's attitude.
     // There will likely be more here but for now I'll add parameters for just the angles (we need to tune these).
-    constexpr float ROLL_ANGLE_KP = 0f;
-    constexpr float ROLL_ANGLE_KI = 0f;
-    constexpr float ROLL_ANGLE_KD = 0f;
+    constexpr float ROLL_ANGLE_KP = 0.0f;
+    constexpr float ROLL_ANGLE_KI = 0.0f;
+    constexpr float ROLL_ANGLE_KD = 0.0f;
 
-    constexpr float PITCH_ANGLE_KP = 0f;
-    constexpr float PITCH_ANGLE_KI = 0f;
-    constexpr float PITCH_ANGLE_KD = 0f;
+    constexpr float PITCH_ANGLE_KP = 0.0f;
+    constexpr float PITCH_ANGLE_KI = 0.0f;
+    constexpr float PITCH_ANGLE_KD = 0.0f;
 }
