@@ -4,7 +4,7 @@
 
 namespace Config {
     
-    constexpr uint32_t SERIAL_BAUD = 115200;
+    constexpr unsigned long SERIAL_BAUD = 115200;
 
     // ESC PWM Pins
     constexpr int MOTOR_1_PIN = 1; // TODO: Update this when we have wiring set up

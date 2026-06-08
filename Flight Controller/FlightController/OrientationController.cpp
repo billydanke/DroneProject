@@ -2,7 +2,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-OrientationController::OrientationController() {
+OrientationController::OrientationController() { }
+
+void OrientationController::Init() {
     Wire.begin();
     Wire.beginTransmission(Config::MPU_ADDRESS);
     Wire.write(0x6B); // Power management register.
@@ -10,10 +12,13 @@ OrientationController::OrientationController() {
     Wire.endTransmission(true);
 
     _lastMeasurementTime = millis();
+    _isInitialized = true;
 }
 
 IMUData OrientationController::GetIMUData() {
     IMUData data;
+
+    if (!_isInitialized) return data;
 
     Wire.beginTransmission(Config::MPU_ADDRESS);
     Wire.write(0x3B); // Accelerometer data starting register.
