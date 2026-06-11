@@ -12,15 +12,22 @@ void setup() {
     Serial.println("Initializing Flight Controller...");
 
     // Initialize sensors, motors, etc.
-    orientationController.Init();
-
-    Serial.println("Flight Controller initialized!");
+    if (orientationController.Init()) {
+        Serial.println("Flight Controller initialized!");
+    } else {
+        Serial.println("ERROR: Failed to initialize IMU over I2C.");
+    }
 }
 
 void loop() {
 
     // Update sensor readings and determine current orientation.
     Orientation orientation = orientationController.GetOrientation();
+    if (!orientation.ReadSuccessful) {
+        Serial.println("ERROR: Failed to read IMU data.");
+        return;
+    }
+
     Serial.print("Roll: ");
     Serial.print(orientation.RollDeg);
     Serial.print("\tPitch: ");

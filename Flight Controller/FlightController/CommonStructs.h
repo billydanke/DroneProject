@@ -8,6 +8,8 @@ struct IMUData {
     float AccelerationForceX = 0.0f;
     float AccelerationForceY = 0.0f;
     float AccelerationForceZ = 0.0f;
+
+    bool ReadSuccessful = false;
 };
 
 struct BarometerData {
@@ -35,6 +37,8 @@ struct Orientation {
     float RollDeg = 0.0f;
     float PitchDeg = 0.0f;
     float YawDeg = 0.0f;
+
+    bool ReadSuccessful = false;
 };
 
 struct MotorPWMOutput {

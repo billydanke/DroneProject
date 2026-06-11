@@ -6,14 +6,14 @@ class OrientationController {
     private:
     bool _isInitialized = false;
     Orientation _lastOrientation = Orientation();
-    unsigned long _lastMeasurementTime = 0;
+    uint32_t _lastMeasurementTimeUs = 0;
     
     IMUData GetIMUData();
 
     public:
     OrientationController();
 
-    void Init();
+    bool Init();
 
     Orientation GetOrientation();
 };
