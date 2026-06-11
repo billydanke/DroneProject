@@ -23,6 +23,13 @@ namespace Config {
 
     // MPU Orientation
     constexpr int MPU_ADDRESS = 0x68;
+    constexpr float ORIENTATION_FILTER_TIME_CONSTANT_S = 0.5f;
+
+    // Gyroscope calibration
+    constexpr uint16_t GYRO_CALIBRATION_SAMPLE_COUNT = 100;
+    constexpr float GYRO_CALIBRATION_MAX_RATE_DEG_S = 20.0f;
+    constexpr float GYRO_CALIBRATION_MAX_RATE_DEVIATION_DEG_S = 2.5f;
+    constexpr float GYRO_CALIBRATION_ACCEL_TOLERANCE_G = 0.25f;
 
     // PID Gain Settings
     // We'll probably have PIDs for roll and pitch to hold the drone's attitude.

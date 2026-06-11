@@ -13,7 +13,9 @@ void setup() {
 
     // Initialize sensors, motors, etc.
     if (orientationController.Init()) {
+        orientationController.StartCalibration();
         Serial.println("Flight Controller initialized!");
+        Serial.println("Keep the drone still while the gyroscope calibrates.");
     } else {
         Serial.println("ERROR: Failed to initialize IMU over I2C.");
     }
@@ -26,6 +28,29 @@ void loop() {
     if (!orientation.ReadSuccessful) {
         Serial.println("ERROR: Failed to read IMU data.");
         return;
+    }
+
+    if (orientationController.IsCalibrating()) {
+        static uint16_t lastReportedSampleCount = 0;
+        uint16_t sampleCount = orientationController.GetCalibrationSampleCount();
+        constexpr uint16_t calibrationReportInterval = 10;
+
+        if (sampleCount / calibrationReportInterval !=
+            lastReportedSampleCount / calibrationReportInterval) {
+            Serial.print("Gyroscope calibration samples: ");
+            Serial.print(sampleCount);
+            Serial.print("/");
+            Serial.println(Config::GYRO_CALIBRATION_SAMPLE_COUNT);
+        }
+
+        lastReportedSampleCount = sampleCount;
+        return;
+    }
+
+    static bool calibrationCompleteReported = false;
+    if (orientationController.IsCalibrationComplete() && !calibrationCompleteReported) {
+        Serial.println("Gyroscope calibration complete.");
+        calibrationCompleteReported = true;
     }
 
     Serial.print("Roll: ");
