@@ -41,4 +41,8 @@ namespace Config {
     constexpr float PITCH_ANGLE_KP = 0.0f;
     constexpr float PITCH_ANGLE_KI = 0.0f;
     constexpr float PITCH_ANGLE_KD = 0.0f;
+
+    constexpr float YAW_ANGLE_KP = 0.0f;
+    constexpr float YAW_ANGLE_KI = 0.0f;
+    constexpr float YAW_ANGLE_KD = 0.0f;
 }
