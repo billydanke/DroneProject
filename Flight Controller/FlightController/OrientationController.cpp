@@ -192,7 +192,7 @@ Orientation OrientationController::GetOrientation() {
     // then we need to hook in a compass (not sure if a compass would be noisy or not so we may also want a filter here too).
     float currentYaw = gyroscopeYaw;
 
-    Orientation currentOrientation = Orientation { currentRoll, currentPitch, currentYaw, true };
+    Orientation currentOrientation = Orientation {currentRoll, currentPitch, currentYaw, true, rawData.GyroX, rawData.GyroY, rawData.GyroZ};
     
     _lastOrientation = currentOrientation;
 

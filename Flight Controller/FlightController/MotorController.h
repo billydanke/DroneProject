@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Servo.h>
 #include "CommonStructs.h"
 #include "PIDController.h"
 #include "Config.h"
@@ -9,19 +8,29 @@ class MotorController {
     private:
     PIDController _rollPID = PIDController(Config::ROLL_ANGLE_KP, Config::ROLL_ANGLE_KI, Config::ROLL_ANGLE_KD);
     PIDController _pitchPID = PIDController(Config::PITCH_ANGLE_KP, Config::PITCH_ANGLE_KI, Config::PITCH_ANGLE_KD);
-    PIDController _yawPID = PIDController(Config::YAW_ANGLE_KP, Config::YAW_ANGLE_KI, Config::YAW_ANGLE_KD);
+    PIDController _yawPID = PIDController(Config::YAW_RATE_KP, Config::YAW_RATE_KI, Config::YAW_RATE_KD);
 
-    Servo _motor1ESC;
-    Servo _motor2ESC;
-    Servo _motor3ESC;
-    Servo _motor4ESC;
-    MotorPWMOutput _currentMotorOutput = MotorPWMOutput {1000, 1000, 1000, 1000};
+    MotorPWMOutput _currentMotorOutput = MotorPWMOutput {Config::PWM_MIN_US, Config::PWM_MIN_US, Config::PWM_MIN_US, Config::PWM_MIN_US };
     uint32_t _lastUpdateTimeUs = 0;
+    bool _isInitialized = false;
+    bool _isArmed = false;
+    bool _mixerSaturatedLastUpdate = false;
+
+    void ResetControllers();
+    void WriteMinimumOutput();
+    void WriteMotorPWM(const MotorPWMOutput& output);
+    int PowerToPwmUs(float power) const;
+    static float WrapAngleErrorDeg(float targetDeg, float measuredDeg);
 
     public:
     MotorController();
-    void Init();
+    bool Init();
 
-    void UpdateMotorOutputs(float throttle, Orientation currentOriention, Orientation targetOrientation);
-    void WriteMotorPWM(MotorPWMOutput output);
+    bool Arm(float throttle);
+    void Disarm();
+    void EmergencyStop();
+    bool IsArmed() const;
+
+    bool UpdateMotorOutputs(float throttle, Orientation currentOrientation, Orientation targetOrientation);
+    MotorPWMOutput GetCurrentMotorOutput() const;
 };

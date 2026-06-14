@@ -24,6 +24,6 @@ class PIDController {
     void SetOutputLimit(float limit);
     void SetDerivativeFilterTimeConstant(float timeConstant);
 
-    float Update(float targetValue, float measuredValue, float dt);
+    float Update(float targetValue, float measuredValue, float dt, bool allowIntegration = true);
     void Reset();
 };

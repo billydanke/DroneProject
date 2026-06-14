@@ -27,7 +27,7 @@ void PIDController::SetDerivativeFilterTimeConstant(float timeConstant) {
     _derivativeFilterTimeConstant = max(0.0f, timeConstant);
 }
 
-float PIDController::Update(float targetValue, float measuredValue, float dt) {
+float PIDController::Update(float targetValue, float measuredValue, float dt, bool allowIntegration) {
     if (dt <= 0.0f) return 0.0f;
 
     float error = targetValue - measuredValue;
@@ -54,7 +54,7 @@ float PIDController::Update(float targetValue, float measuredValue, float dt) {
     bool outputIsSaturatedLow = candidateOutput < -_outputLimit;
     bool integratorReducesSaturation = (outputIsSaturatedHigh && integratorOutputChange < 0.0f) || (outputIsSaturatedLow && integratorOutputChange > 0.0f);
 
-    if ((!outputIsSaturatedHigh && !outputIsSaturatedLow) || integratorReducesSaturation) {
+    if (allowIntegration && ((!outputIsSaturatedHigh && !outputIsSaturatedLow) || integratorReducesSaturation)) {
         _integrator = candidateIntegrator;
     }
 

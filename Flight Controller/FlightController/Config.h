@@ -13,13 +13,19 @@ namespace Config {
     constexpr int MOTOR_4_PIN = 4; // TODO: Update this when we have wiring set up
 
     constexpr uint32_t MOTOR_PWM_FREQUENCY_HZ = 400;
+    constexpr uint8_t MOTOR_PWM_RESOLUTION_BITS = 16;
     constexpr int PWM_MIN_US = 1000;
     constexpr int PWM_MAX_US = 2000;
+    constexpr float MOTOR_CONTROLLER_MAX_DT_S = 0.05f;
+    constexpr float MOTOR_ARM_MAX_THROTTLE = 0.05f;
+    constexpr float MOTOR_CONTROL_MIN_THROTTLE = 0.05f;
 
     // Angle Limits
     constexpr float MAX_ROLL_ANGLE_DEG = 25.0f;
     constexpr float MAX_PITCH_ANGLE_DEG = 25.0f;
     constexpr float MAX_YAW_RATE_DEG_S = 180.0f;
+    constexpr float YAW_RATE_COMMAND_DEADBAND_DEG_S = 1.0f;
+    constexpr float YAW_HEADING_KP = 1.0f;
 
     // MPU Orientation
     constexpr int MPU_ADDRESS = 0x68;
@@ -42,7 +48,7 @@ namespace Config {
     constexpr float PITCH_ANGLE_KI = 0.0f;
     constexpr float PITCH_ANGLE_KD = 0.0f;
 
-    constexpr float YAW_ANGLE_KP = 0.0f;
-    constexpr float YAW_ANGLE_KI = 0.0f;
-    constexpr float YAW_ANGLE_KD = 0.0f;
+    constexpr float YAW_RATE_KP = 0.0f;
+    constexpr float YAW_RATE_KI = 0.0f;
+    constexpr float YAW_RATE_KD = 0.0f;
 }
