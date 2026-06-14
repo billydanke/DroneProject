@@ -33,38 +33,28 @@ float PIDController::Update(float targetValue, float measuredValue, float dt) {
     float error = targetValue - measuredValue;
 
     float derivative = 0.0f;
+
     if (_hasPreviousMeasurement) {
         float rawDerivative = -(measuredValue - _previousMeasurement) / dt;
-        float filterAlpha =
-            _derivativeFilterTimeConstant /
-            (_derivativeFilterTimeConstant + dt);
-        _filteredDerivative =
-            filterAlpha * _filteredDerivative +
-            (1.0f - filterAlpha) * rawDerivative;
+        float filterAlpha = _derivativeFilterTimeConstant / (_derivativeFilterTimeConstant + dt);
+        _filteredDerivative = filterAlpha * _filteredDerivative + (1.0f - filterAlpha) * rawDerivative;
         derivative = _filteredDerivative;
     } else {
         _hasPreviousMeasurement = true;
     }
+    
     _previousMeasurement = measuredValue;
 
-    float candidateIntegrator = constrain(
-        _integrator + error * dt,
-        -_integratorLimit,
-        _integratorLimit);
+    float candidateIntegrator = constrain(_integrator + error * dt, - _integratorLimit, _integratorLimit);
     float proportionalAndDerivative = (_kp * error) + (_kd * derivative);
-    float candidateOutput =
-        proportionalAndDerivative + (_ki * candidateIntegrator);
-    float integratorOutputChange =
-        _ki * (candidateIntegrator - _integrator);
+    float candidateOutput = proportionalAndDerivative + (_ki * candidateIntegrator);
+    float integratorOutputChange = _ki * (candidateIntegrator - _integrator);
 
     bool outputIsSaturatedHigh = candidateOutput > _outputLimit;
     bool outputIsSaturatedLow = candidateOutput < -_outputLimit;
-    bool integratorReducesSaturation =
-        (outputIsSaturatedHigh && integratorOutputChange < 0.0f) ||
-        (outputIsSaturatedLow && integratorOutputChange > 0.0f);
+    bool integratorReducesSaturation = (outputIsSaturatedHigh && integratorOutputChange < 0.0f) || (outputIsSaturatedLow && integratorOutputChange > 0.0f);
 
-    if ((!outputIsSaturatedHigh && !outputIsSaturatedLow) ||
-        integratorReducesSaturation) {
+    if ((!outputIsSaturatedHigh && !outputIsSaturatedLow) || integratorReducesSaturation) {
         _integrator = candidateIntegrator;
     }
 

@@ -35,8 +35,7 @@ void loop() {
         uint16_t sampleCount = orientationController.GetCalibrationSampleCount();
         constexpr uint16_t calibrationReportInterval = 10;
 
-        if (sampleCount / calibrationReportInterval !=
-            lastReportedSampleCount / calibrationReportInterval) {
+        if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
             Serial.print("Gyroscope calibration samples: ");
             Serial.print(sampleCount);
             Serial.print("/");
@@ -61,6 +60,8 @@ void loop() {
     Serial.println(orientation.YawDeg);
 
     // Read any RF commands to get the target orientation.
+    // For now I will just force this to be a balanced target orientation.
+    Orientation targetOrientation = Orientation(0,0,0, true);
 
     // Update PID controllers for roll, pitch, and yaw.
 
