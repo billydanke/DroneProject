@@ -77,7 +77,11 @@ void loop() {
     // Read any RF commands to get the target orientation.
     // For now I will just force this to be a balanced target orientation.
     // Replace this with the latest command over RF.
-    PilotCommand pilotCommand;
+    PilotCommand pilotCommand = PilotCommand(50, 0,0,0, true, false);
+    if (!motorController.IsArmed()) {
+        pilotCommand = PilotCommand(5, 0,0,0, true, false);
+    }
+
     float throttle = constrain(pilotCommand.throttlePercent / 100.0f, 0.0f, 1.0f);
 
     if (pilotCommand.DoEStop) {
@@ -132,6 +136,17 @@ void loop() {
     if (!motorController.UpdateMotorOutputs(throttle, orientation, targetOrientation)) {
         Serial.println("ERROR: Motor update failed; motors disarmed.");
     }
+
+    MotorPWMOutput currentMotorOutput = motorController.GetCurrentMotorOutput();
+    Serial.print("M1:");
+    Serial.print(currentMotorOutput.Motor1PwmUs);
+    Serial.print("\tM2:");
+    Serial.print(currentMotorOutput.Motor2PwmUs);
+    Serial.print("\tM3:");
+    Serial.print(currentMotorOutput.Motor3PwmUs);
+    Serial.print("\tM4:");
+    Serial.println(currentMotorOutput.Motor4PwmUs);
+    Serial.println();
 
     // Transmit whatever information is necessary back to user (battery, altitude, etc).
 }
