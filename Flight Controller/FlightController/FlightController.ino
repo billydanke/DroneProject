@@ -2,9 +2,11 @@
 
 #include "Config.h"
 #include "CommonStructs.h"
+#include "MotorController.h"
 #include "OrientationController.h"
 
 OrientationController orientationController;
+MotorController motorController;
 
 void setup() {
     Serial.begin(Config::SERIAL_BAUD);
@@ -12,12 +14,22 @@ void setup() {
     Serial.println("Initializing Flight Controller...");
 
     // Initialize sensors, motors, etc.
-    if (orientationController.Init()) {
+    bool motorsInitialized = motorController.Init();
+    bool orientationInitialized = orientationController.Init();
+
+    if (!motorsInitialized) {
+        Serial.println("ERROR: Failed to initialize motor PWM outputs.");
+    }
+
+    if (orientationInitialized) {
         orientationController.StartCalibration();
-        Serial.println("Flight Controller initialized!");
         Serial.println("Keep the drone still while the gyroscope calibrates.");
     } else {
         Serial.println("ERROR: Failed to initialize IMU over I2C.");
+    }
+
+    if (motorsInitialized && orientationInitialized) {
+        Serial.println("Flight Controller initialized!");
     }
 }
 
@@ -26,11 +38,14 @@ void loop() {
     // Update sensor readings and determine current orientation.
     Orientation orientation = orientationController.GetOrientation();
     if (!orientation.ReadSuccessful) {
+        motorController.EmergencyStop();
         Serial.println("ERROR: Failed to read IMU data.");
         return;
     }
 
     if (orientationController.IsCalibrating()) {
+        motorController.Disarm();
+
         static uint16_t lastReportedSampleCount = 0;
         uint16_t sampleCount = orientationController.GetCalibrationSampleCount();
         constexpr uint16_t calibrationReportInterval = 10;
@@ -61,9 +76,62 @@ void loop() {
 
     // Read any RF commands to get the target orientation.
     // For now I will just force this to be a balanced target orientation.
-    Orientation targetOrientation = Orientation(0,0,0, true);
+    // Replace this with the latest command over RF.
+    PilotCommand pilotCommand;
+    float throttle = constrain(pilotCommand.throttlePercent / 100.0f, 0.0f, 1.0f);
 
-    // Update PID controllers for roll, pitch, and yaw.
+    if (pilotCommand.DoEStop) {
+        motorController.EmergencyStop();
+        return;
+    }
+
+    static float targetYawDeg = 0.0f;
+    static bool targetYawCaptured = false;
+
+    if (!motorController.IsArmed()) {
+        targetYawCaptured = false;
+
+        if (!pilotCommand.DoArm) return;
+
+        if (!motorController.Arm(throttle)) {
+            Serial.println("ERROR: Motor arm request denied.");
+            return;
+        }
+
+        targetYawDeg = orientation.YawDeg;
+        targetYawCaptured = true;
+        Serial.println("Motors armed.");
+
+    } else if (!pilotCommand.DoArm) {
+        motorController.Disarm();
+        targetYawCaptured = false;
+        Serial.println("Motors disarmed.");
+        return;
+    }
+
+    if (!targetYawCaptured) {
+        targetYawDeg = orientation.YawDeg;
+        targetYawCaptured = true;
+    }
+
+    float targetYawRateDegS = constrain(pilotCommand.YawRateDegS, -Config::MAX_YAW_RATE_DEG_S, Config::MAX_YAW_RATE_DEG_S);
+    if (abs(targetYawRateDegS) > Config::YAW_RATE_COMMAND_DEADBAND_DEG_S) {
+        targetYawDeg = orientation.YawDeg;
+    }
+
+    Orientation targetOrientation {
+        constrain(pilotCommand.RollDeg, -Config::MAX_ROLL_ANGLE_DEG, Config::MAX_ROLL_ANGLE_DEG),
+        constrain(pilotCommand.PitchDeg, -Config::MAX_PITCH_ANGLE_DEG, Config::MAX_PITCH_ANGLE_DEG),
+        targetYawDeg,
+        true,
+        0.0f,
+        0.0f,
+        targetYawRateDegS
+    };
+
+    if (!motorController.UpdateMotorOutputs(throttle, orientation, targetOrientation)) {
+        Serial.println("ERROR: Motor update failed; motors disarmed.");
+    }
 
     // Transmit whatever information is necessary back to user (battery, altitude, etc).
 }
