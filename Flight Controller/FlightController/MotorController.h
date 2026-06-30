@@ -10,10 +10,10 @@ class MotorController {
     PIDController _pitchPID = PIDController(Config::PITCH_ANGLE_KP, Config::PITCH_ANGLE_KI, Config::PITCH_ANGLE_KD);
     PIDController _yawPID = PIDController(Config::YAW_RATE_KP, Config::YAW_RATE_KI, Config::YAW_RATE_KD);
 
+    FlightState& _flightState;
     MotorPWMOutput _currentMotorOutput = MotorPWMOutput {Config::PWM_MIN_US, Config::PWM_MIN_US, Config::PWM_MIN_US, Config::PWM_MIN_US };
     uint32_t _lastUpdateTimeUs = 0;
     bool _isInitialized = false;
-    bool _isArmed = false;
     bool _mixerSaturatedLastUpdate = false;
 
     void ResetControllers();
@@ -23,7 +23,7 @@ class MotorController {
     static float WrapAngleErrorDeg(float targetDeg, float measuredDeg);
 
     public:
-    MotorController();
+    MotorController(FlightState& flightState);
     bool Init();
 
     bool Arm(float throttle);

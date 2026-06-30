@@ -65,7 +65,7 @@ namespace {
     }
 }
 
-MotorController::MotorController() { }
+MotorController::MotorController(FlightState& flightState) : _flightState(flightState) { }
 
 bool MotorController::Init() {
     bool motor1Attached = AttachMotorPwm(Config::MOTOR_1_PIN, MOTOR_1_PWM_CHANNEL);
@@ -77,9 +77,8 @@ bool MotorController::Init() {
     _pitchPID.SetDerivativeFilterTimeConstant(Config::PITCH_ANGLE_DERIVATIVE_FILTER_TC_S);
     _yawPID.SetDerivativeFilterTimeConstant(Config::YAW_RATE_DERIVATIVE_FILTER_TC_S);
 
-    _isInitialized =
-        motor1Attached && motor2Attached && motor3Attached && motor4Attached;
-    _isArmed = false;
+    _isInitialized = motor1Attached && motor2Attached && motor3Attached && motor4Attached;
+    _flightState.IsArmed = false;
     ResetControllers();
     WriteMinimumOutput();
     _lastUpdateTimeUs = micros();
@@ -95,13 +94,13 @@ bool MotorController::Arm(float throttle) {
     WriteMinimumOutput();
 
     _lastUpdateTimeUs = micros();
-    _isArmed = true;
-    
+    _flightState.IsArmed = true;
+
     return true;
 }
 
 void MotorController::Disarm() {
-    _isArmed = false;
+    _flightState.IsArmed = false;
 
     ResetControllers();
     WriteMinimumOutput();
@@ -111,7 +110,7 @@ void MotorController::EmergencyStop() {
     Disarm();
 }
 
-bool MotorController::IsArmed() const { return _isArmed; }
+bool MotorController::IsArmed() const { return _flightState.IsArmed; }
 
 void MotorController::ResetControllers() {
     _rollPID.Reset();
@@ -134,7 +133,7 @@ float MotorController::WrapAngleErrorDeg(float targetDeg, float measuredDeg) {
 }
 
 bool MotorController::UpdateMotorOutputs(float throttle, Orientation currentOrientation, Orientation targetOrientation) {
-    if (!_isArmed) {
+    if (!_flightState.IsArmed) {
         WriteMinimumOutput();
         return false;
     }

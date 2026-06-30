@@ -5,8 +5,9 @@
 #include "MotorController.h"
 #include "OrientationController.h"
 
+FlightState flightState;
 OrientationController orientationController;
-MotorController motorController;
+MotorController motorController(flightState);
 
 void setup() {
     Serial.begin(Config::SERIAL_BAUD);

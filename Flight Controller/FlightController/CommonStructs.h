@@ -62,3 +62,7 @@ struct PilotCommand {
     bool DoArm = false;
     bool DoEStop = false;
 };
+
+struct FlightState {
+    bool IsArmed = false;
+};
