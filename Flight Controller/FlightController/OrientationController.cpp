@@ -10,12 +10,30 @@ bool OrientationController::Init() {
     _isCalibrationComplete = false;
 
     Wire.begin();
+
+    // Wake the MPU6050 (clears SLEEP bit in PWR_MGMT_1).
     Wire.beginTransmission(Config::MPU_ADDRESS);
-    Wire.write(0x6B); // Power management register.
-    Wire.write(0); // Wake command.
-    if (Wire.endTransmission(true) != 0) {
-        return false;
-    }
+    Wire.write(0x6B);
+    Wire.write(0x00);
+    if (Wire.endTransmission(true) != 0) return false;
+
+    // Set DLPF bandwidth (CONFIG register 0x1A). Also sets gyro output rate to 1kHz.
+    Wire.beginTransmission(Config::MPU_ADDRESS);
+    Wire.write(0x1A);
+    Wire.write(Config::MPU_DLPF_CFG);
+    if (Wire.endTransmission(true) != 0) return false;
+
+    // Set gyro full-scale range to +-250°/s (GYRO_CONFIG register 0x1B).
+    Wire.beginTransmission(Config::MPU_ADDRESS);
+    Wire.write(0x1B);
+    Wire.write(0x00);
+    if (Wire.endTransmission(true) != 0) return false;
+
+    // Set accel full-scale range to +-2g (ACCEL_CONFIG register 0x1C).
+    Wire.beginTransmission(Config::MPU_ADDRESS);
+    Wire.write(0x1C);
+    Wire.write(0x00);
+    if (Wire.endTransmission(true) != 0) return false;
 
     _lastMeasurementTimeUs = micros();
     _isInitialized = true;

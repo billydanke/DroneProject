@@ -73,6 +73,10 @@ bool MotorController::Init() {
     bool motor3Attached = AttachMotorPwm(Config::MOTOR_3_PIN, MOTOR_3_PWM_CHANNEL);
     bool motor4Attached = AttachMotorPwm(Config::MOTOR_4_PIN, MOTOR_4_PWM_CHANNEL);
 
+    _rollPID.SetDerivativeFilterTimeConstant(Config::ROLL_ANGLE_DERIVATIVE_FILTER_TC_S);
+    _pitchPID.SetDerivativeFilterTimeConstant(Config::PITCH_ANGLE_DERIVATIVE_FILTER_TC_S);
+    _yawPID.SetDerivativeFilterTimeConstant(Config::YAW_RATE_DERIVATIVE_FILTER_TC_S);
+
     _isInitialized =
         motor1Attached && motor2Attached && motor3Attached && motor4Attached;
     _isArmed = false;

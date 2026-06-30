@@ -18,9 +18,9 @@ struct BarometerData {
 };
 
 struct CompassData {
-    float compassX = 0.0f;
-    float compassY = 0.0f;
-    float compassZ = 0.0f;
+    float CompassX = 0.0f;
+    float CompassY = 0.0f;
+    float CompassZ = 0.0f;
 };
 
 struct GPSData {
@@ -53,7 +53,7 @@ struct MotorPWMOutput {
 };
 
 struct PilotCommand {
-    float throttlePercent = 0.0f;
+    float ThrottlePercent = 0.0f;
 
     float RollDeg = 0.0f;
     float PitchDeg = 0.0f;

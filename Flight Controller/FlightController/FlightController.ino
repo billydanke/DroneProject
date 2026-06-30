@@ -82,7 +82,7 @@ void loop() {
         pilotCommand = PilotCommand(5, 0,0,0, true, false);
     }
 
-    float throttle = constrain(pilotCommand.throttlePercent / 100.0f, 0.0f, 1.0f);
+    float throttle = constrain(pilotCommand.ThrottlePercent / 100.0f, 0.0f, 1.0f);
 
     if (pilotCommand.DoEStop) {
         motorController.EmergencyStop();
@@ -149,4 +149,17 @@ void loop() {
     Serial.println();
 
     // Transmit whatever information is necessary back to user (battery, altitude, etc).
+
+    // Hold loop timing. Serial output at 115200 baud will limit the achievable rate.
+    // Serial prints need to be removed before this is "production-ready".
+    static uint32_t nextLoopTimeUs = 0;
+    constexpr uint32_t loopPeriodUs = 1000000UL / Config::LOOP_RATE_HZ;
+    uint32_t now = micros();
+    if (now >= nextLoopTimeUs + loopPeriodUs) {
+        nextLoopTimeUs = now;
+    }
+    while (micros() < nextLoopTimeUs) {
+        // Hold until next loop is ready.
+    }
+    nextLoopTimeUs += loopPeriodUs;
 }

@@ -5,6 +5,7 @@
 namespace Config {
     
     constexpr unsigned long SERIAL_BAUD = 115200;
+    constexpr uint32_t LOOP_RATE_HZ = 400;
 
     // ESC PWM Pins
     constexpr int MOTOR_1_PIN = 27;
@@ -27,8 +28,10 @@ namespace Config {
     constexpr float YAW_RATE_COMMAND_DEADBAND_DEG_S = 1.0f;
     constexpr float YAW_HEADING_KP = 1.0f;
 
-    // MPU Orientation
+    // MPU Configuration
     constexpr int MPU_ADDRESS = 0x68;
+    // DLPF_CFG=2: 94Hz gyro BW, 1kHz output rate. Reduces noise well below Nyquist at LOOP_RATE_HZ.
+    constexpr uint8_t MPU_DLPF_CFG = 0x02;
     constexpr float ORIENTATION_FILTER_TIME_CONSTANT_S = 0.5f;
 
     // Gyroscope calibration
@@ -36,6 +39,11 @@ namespace Config {
     constexpr float GYRO_CALIBRATION_MAX_RATE_DEG_S = 20.0f;
     constexpr float GYRO_CALIBRATION_MAX_RATE_DEVIATION_DEG_S = 2.5f;
     constexpr float GYRO_CALIBRATION_ACCEL_TOLERANCE_G = 0.25f;
+
+    // PID Derivative Filter Time Constants
+    constexpr float ROLL_ANGLE_DERIVATIVE_FILTER_TC_S = 0.005f;
+    constexpr float PITCH_ANGLE_DERIVATIVE_FILTER_TC_S = 0.005f;
+    constexpr float YAW_RATE_DERIVATIVE_FILTER_TC_S = 0.005f;
 
     // PID Gain Settings
     // We'll probably have PIDs for roll and pitch to hold the drone's attitude.
