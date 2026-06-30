@@ -29,17 +29,16 @@ void CommandHandler::ParseCommand(const char* line) {
     float throttle, roll, pitch, yawRate;
     int arm, estop;
 
-    int parsed = sscanf(line, "%f,%f,%f,%f,%d,%d",
-        &throttle, &roll, &pitch, &yawRate, &arm, &estop);
+    int parsed = sscanf(line, "%f,%f,%f,%f,%d,%d", &throttle, &roll, &pitch, &yawRate, &arm, &estop);
 
     if (parsed != 6) return;
 
     _currentCommand.ThrottlePercent = throttle;
-    _currentCommand.RollDeg        = roll;
-    _currentCommand.PitchDeg       = pitch;
-    _currentCommand.YawRateDegS    = yawRate;
-    _currentCommand.DoArm          = arm != 0;
-    _currentCommand.DoEStop        = estop != 0;
+    _currentCommand.RollDeg = roll;
+    _currentCommand.PitchDeg = pitch;
+    _currentCommand.YawRateDegS = yawRate;
+    _currentCommand.DoArm = arm != 0;
+    _currentCommand.DoEStop = estop != 0;
 }
 
 PilotCommand CommandHandler::GetCommand() const {
