@@ -2,10 +2,12 @@
 
 #include "Config.h"
 #include "CommonStructs.h"
+#include "CommandHandler.h"
 #include "MotorController.h"
 #include "OrientationController.h"
 
 FlightState flightState;
+CommandHandler commandHandler;
 OrientationController orientationController;
 MotorController motorController(flightState);
 
@@ -35,6 +37,8 @@ void setup() {
 }
 
 void loop() {
+
+    commandHandler.Update();
 
     // Update sensor readings and determine current orientation.
     Orientation orientation = orientationController.GetOrientation();
@@ -75,13 +79,7 @@ void loop() {
     Serial.print("\tApprox Yaw: ");
     Serial.println(orientation.YawDeg);
 
-    // Read any RF commands to get the target orientation.
-    // For now I will just force this to be a balanced target orientation.
-    // Replace this with the latest command over RF.
-    PilotCommand pilotCommand = PilotCommand(50, 0,0,0, true, false);
-    if (!motorController.IsArmed()) {
-        pilotCommand = PilotCommand(5, 0,0,0, true, false);
-    }
+    PilotCommand pilotCommand = commandHandler.GetCommand();
 
     float throttle = constrain(pilotCommand.ThrottlePercent / 100.0f, 0.0f, 1.0f);
 
@@ -93,7 +91,7 @@ void loop() {
     static float targetYawDeg = 0.0f;
     static bool targetYawCaptured = false;
 
-    if (!motorController.IsArmed()) {
+    if (!flightState.IsArmed) {
         targetYawCaptured = false;
 
         if (!pilotCommand.DoArm) return;
