@@ -45,11 +45,11 @@ struct Orientation {
     float YawRateDegS = 0.0f;
 };
 
-struct MotorPWMOutput {
-    int Motor1PwmUs = 1000;
-    int Motor2PwmUs = 1000;
-    int Motor3PwmUs = 1000;
-    int Motor4PwmUs = 1000;
+struct MotorOutput {
+    float Motor1Power = 0.0f;
+    float Motor2Power = 0.0f;
+    float Motor3Power = 0.0f;
+    float Motor4Power = 0.0f;
 };
 
 struct PilotCommand {

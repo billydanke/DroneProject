@@ -13,10 +13,8 @@ namespace Config {
     constexpr int MOTOR_3_PIN = 25;
     constexpr int MOTOR_4_PIN = 33;
 
-    constexpr uint32_t MOTOR_PWM_FREQUENCY_HZ = 400;
-    constexpr uint8_t MOTOR_PWM_RESOLUTION_BITS = 16;
-    constexpr int PWM_MIN_US = 1000;
-    constexpr int PWM_MAX_US = 2000;
+    constexpr uint16_t DSHOT_THROTTLE_MIN = 48;   // Values 1-47 are special ESC commands.
+    constexpr uint16_t DSHOT_THROTTLE_MAX = 2047;
     constexpr float MOTOR_CONTROLLER_MAX_DT_S = 0.05f;
     constexpr float MOTOR_ARM_MAX_THROTTLE = 0.05f;
     constexpr float MOTOR_CONTROL_MIN_THROTTLE = 0.05f;

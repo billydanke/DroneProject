@@ -1,5 +1,6 @@
 #pragma once
 
+#include <DShotRMT.h>
 #include "CommonStructs.h"
 #include "PIDController.h"
 #include "Config.h"
@@ -11,15 +12,19 @@ class MotorController {
     PIDController _yawPID = PIDController(Config::YAW_RATE_KP, Config::YAW_RATE_KI, Config::YAW_RATE_KD);
 
     FlightState& _flightState;
-    MotorPWMOutput _currentMotorOutput = MotorPWMOutput {Config::PWM_MIN_US, Config::PWM_MIN_US, Config::PWM_MIN_US, Config::PWM_MIN_US };
+    DShotRMT _motor1;
+    DShotRMT _motor2;
+    DShotRMT _motor3;
+    DShotRMT _motor4;
+    MotorOutput _currentMotorOutput = MotorOutput { };
     uint32_t _lastUpdateTimeUs = 0;
     bool _isInitialized = false;
     bool _mixerSaturatedLastUpdate = false;
 
     void ResetControllers();
     void WriteMinimumOutput();
-    void WriteMotorPWM(const MotorPWMOutput& output);
-    int PowerToPwmUs(float power) const;
+    void WriteDShotOutput(const MotorOutput& output);
+    uint16_t PowerToDShot(float power) const;
     static float WrapAngleErrorDeg(float targetDeg, float measuredDeg);
 
     public:
@@ -32,5 +37,5 @@ class MotorController {
     bool IsArmed() const;
 
     bool UpdateMotorOutputs(float throttle, Orientation currentOrientation, Orientation targetOrientation);
-    MotorPWMOutput GetCurrentMotorOutput() const;
+    MotorOutput GetCurrentMotorOutput() const;
 };

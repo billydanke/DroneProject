@@ -19,7 +19,7 @@ void setup() {
     bool orientationInitialized = orientationController.Init();
 
     if (!motorsInitialized) {
-        Serial.println("ERROR: Failed to initialize motor PWM outputs.");
+        Serial.println("ERROR: Failed to initialize DShot motor outputs.");
     }
 
     if (orientationInitialized) {
@@ -138,15 +138,15 @@ void loop() {
         Serial.println("ERROR: Motor update failed; motors disarmed.");
     }
 
-    MotorPWMOutput currentMotorOutput = motorController.GetCurrentMotorOutput();
+    MotorOutput currentMotorOutput = motorController.GetCurrentMotorOutput();
     Serial.print("M1:");
-    Serial.print(currentMotorOutput.Motor1PwmUs);
+    Serial.print(currentMotorOutput.Motor1Power);
     Serial.print("\tM2:");
-    Serial.print(currentMotorOutput.Motor2PwmUs);
+    Serial.print(currentMotorOutput.Motor2Power);
     Serial.print("\tM3:");
-    Serial.print(currentMotorOutput.Motor3PwmUs);
+    Serial.print(currentMotorOutput.Motor3Power);
     Serial.print("\tM4:");
-    Serial.println(currentMotorOutput.Motor4PwmUs);
+    Serial.println(currentMotorOutput.Motor4Power);
     Serial.println();
 
     // Transmit whatever information is necessary back to user (battery, altitude, etc).
