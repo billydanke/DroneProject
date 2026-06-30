@@ -50,10 +50,15 @@ MotorController::MotorController(FlightState& flightState) : _flightState(flight
       _motor4(Config::MOTOR_4_PIN, RMT_CHANNEL_3) { }
 
 bool MotorController::Init() {
-    bool motor1Ready = _motor1.begin(DSHOT300);
-    bool motor2Ready = _motor2.begin(DSHOT300);
-    bool motor3Ready = _motor3.begin(DSHOT300);
-    bool motor4Ready = _motor4.begin(DSHOT300);
+    dshot_result_t motor1Result = _motor1.begin(DSHOT300);
+    dshot_result_t motor2Result = _motor2.begin(DSHOT300);
+    dshot_result_t motor3Result = _motor3.begin(DSHOT300);
+    dshot_result_t motor4Result = _motor4.begin(DSHOT300);
+
+    bool motor1Ready = motor1Result.success;
+    bool motor2Ready = motor2Result.success;
+    bool motor3Ready = motor3Result.success;
+    bool motor4Ready = motor4Result.success;
 
     _rollPID.SetDerivativeFilterTimeConstant(Config::ROLL_ANGLE_DERIVATIVE_FILTER_TC_S);
     _pitchPID.SetDerivativeFilterTimeConstant(Config::PITCH_ANGLE_DERIVATIVE_FILTER_TC_S);
