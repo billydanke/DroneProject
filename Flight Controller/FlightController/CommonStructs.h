@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 struct IMUData {
     float GyroX = 0.0f;
     float GyroY = 0.0f;
@@ -13,14 +15,25 @@ struct IMUData {
 };
 
 struct BarometerData {
+    float PressurePa = 0.0f;
     float PressureReadingKPa = 0.0f;
+    float TemperatureC = 0.0f;
     float AltitudeMeters = 0.0f;
+    float VerticalSpeedMetersPerSecond = 0.0f;
+    bool ReadSuccessful = false;
 };
 
 struct CompassData {
     float CompassX = 0.0f;
     float CompassY = 0.0f;
     float CompassZ = 0.0f;
+    float RawX = 0.0f;
+    float RawY = 0.0f;
+    float RawZ = 0.0f;
+    float HeadingDeg = 0.0f;
+    float MagneticFieldMagnitude = 0.0f;
+    bool IsCalibrated = false;
+    bool ReadSuccessful = false;
 };
 
 struct GPSData {
@@ -28,9 +41,14 @@ struct GPSData {
     double LongitudeDeg = 0.0f;
     float AltitudeMeters = 0.0f; // We probably don't want to rely on this as much as the barometer reading
     float GroundSpeedMetersPerSecond = 0.0f;
+    float CourseDeg = 0.0f;
     float CourseRadians = 0.0f;
+    float Hdop = 0.0f;
+    uint32_t FixAgeMs = 0;
     int SatellitesConnectedCount = 0;
     bool IsLocationFixed = false;
+    bool HasNewData = false;
+    bool ReadSuccessful = false;
 };
 
 struct Orientation {

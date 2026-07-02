@@ -44,16 +44,16 @@ namespace {
 }
 
 MotorController::MotorController(FlightState& flightState) : _flightState(flightState),
-      _motor1(Config::MOTOR_1_PIN, RMT_CHANNEL_0),
-      _motor2(Config::MOTOR_2_PIN, RMT_CHANNEL_1),
-      _motor3(Config::MOTOR_3_PIN, RMT_CHANNEL_2),
-      _motor4(Config::MOTOR_4_PIN, RMT_CHANNEL_3) { }
+      _motor1(Config::MOTOR_1_PIN, DSHOT300, false),
+      _motor2(Config::MOTOR_2_PIN, DSHOT300, false),
+      _motor3(Config::MOTOR_3_PIN, DSHOT300, false),
+      _motor4(Config::MOTOR_4_PIN, DSHOT300, false) { }
 
 bool MotorController::Init() {
-    dshot_result_t motor1Result = _motor1.begin(DSHOT300);
-    dshot_result_t motor2Result = _motor2.begin(DSHOT300);
-    dshot_result_t motor3Result = _motor3.begin(DSHOT300);
-    dshot_result_t motor4Result = _motor4.begin(DSHOT300);
+    dshot_result_t motor1Result = _motor1.begin();
+    dshot_result_t motor2Result = _motor2.begin();
+    dshot_result_t motor3Result = _motor3.begin();
+    dshot_result_t motor4Result = _motor4.begin();
 
     bool motor1Ready = motor1Result.success;
     bool motor2Ready = motor2Result.success;

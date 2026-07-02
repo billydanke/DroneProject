@@ -7,6 +7,11 @@ namespace Config {
     constexpr unsigned long SERIAL_BAUD = 115200;
     constexpr uint32_t LOOP_RATE_HZ = 400;
 
+    // Shared I2C Bus
+    constexpr int I2C_SDA_PIN = 21;
+    constexpr int I2C_SCL_PIN = 22;
+    constexpr uint32_t I2C_CLOCK_HZ = 400000;
+
     // ESC PWM Pins
     constexpr int MOTOR_1_PIN = 27;
     constexpr int MOTOR_2_PIN = 26;
@@ -31,6 +36,31 @@ namespace Config {
     // DLPF_CFG=2: 94Hz gyro BW, 1kHz output rate. Reduces noise well below Nyquist at LOOP_RATE_HZ.
     constexpr uint8_t MPU_DLPF_CFG = 0x02;
     constexpr float ORIENTATION_FILTER_TIME_CONSTANT_S = 0.5f;
+
+    // QMC5883L Magnetometer Configuration
+    constexpr int QMC5883L_ADDRESS = 0x0D;
+    constexpr uint8_t QMC5883L_OVERSAMPLING_512 = 0x00;
+    constexpr uint8_t QMC5883L_RANGE_2G = 0x00;
+    constexpr uint8_t QMC5883L_OUTPUT_RATE_100_HZ = 0x0C;
+    constexpr uint8_t QMC5883L_CONTINUOUS_MODE = 0x01;
+    constexpr float MAGNETOMETER_YAW_FILTER_TIME_CONSTANT_S = 2.0f;
+    constexpr uint16_t MAGNETOMETER_CALIBRATION_SAMPLE_COUNT = 500;
+    constexpr float MAGNETOMETER_MIN_VALID_MAGNITUDE = 0.01f;
+    constexpr float MAGNETOMETER_MAX_VALID_MAGNITUDE = 10000.0f;
+
+    // BMP180 Barometer Configuration
+    constexpr int BMP180_ADDRESS = 0x77;
+    constexpr uint8_t BMP180_OVERSAMPLING_SETTING = 3;
+    constexpr uint16_t BAROMETER_UPDATE_RATE_HZ = 25;
+    constexpr uint16_t BAROMETER_CALIBRATION_SAMPLE_COUNT = 100;
+    constexpr float STANDARD_SEA_LEVEL_PRESSURE_PA = 101325.0f;
+    constexpr float ALTITUDE_FILTER_TIME_CONSTANT_S = 1.0f;
+
+    // GPS Configuration
+    constexpr unsigned long GPS_BAUD = 9600;
+    constexpr int GPS_RX_PIN = 16;
+    constexpr int GPS_TX_PIN = 17;
+    constexpr uint32_t GPS_FIX_TIMEOUT_MS = 2000;
 
     // Gyroscope calibration
     constexpr uint16_t GYRO_CALIBRATION_SAMPLE_COUNT = 100;

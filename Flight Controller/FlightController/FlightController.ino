@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <Wire.h>
 
 #include "Config.h"
 #include "CommonStructs.h"
@@ -15,6 +16,9 @@ void setup() {
     Serial.begin(Config::SERIAL_BAUD);
     delay(100);
     Serial.println("Initializing Flight Controller...");
+
+    Wire.begin(Config::I2C_SDA_PIN, Config::I2C_SCL_PIN);
+    Wire.setClock(Config::I2C_CLOCK_HZ);
 
     // Initialize sensors, motors, etc.
     bool motorsInitialized = motorController.Init();

@@ -9,8 +9,6 @@ bool OrientationController::Init() {
     _isCalibrating = false;
     _isCalibrationComplete = false;
 
-    Wire.begin();
-
     // Wake the MPU6050 (clears SLEEP bit in PWR_MGMT_1).
     Wire.beginTransmission(Config::MPU_ADDRESS);
     Wire.write(0x6B);
