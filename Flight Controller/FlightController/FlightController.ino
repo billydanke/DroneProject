@@ -44,6 +44,15 @@ void loop() {
 
     commandHandler.Update();
 
+    if (commandHandler.ConsumeCompassCalibrationRequest()) {
+        if (flightState.IsArmed) {
+            Serial.println("ERROR: Compass calibration request denied while armed.");
+        } else {
+            orientationController.StartCompassCalibration();
+            Serial.println("Rotate the drone through roll, pitch, and yaw while the compass calibrates.");
+        }
+    }
+
     // Update sensor readings and determine current orientation.
     Orientation orientation = orientationController.GetOrientation();
     if (!orientation.ReadSuccessful) {

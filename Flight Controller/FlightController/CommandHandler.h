@@ -9,6 +9,7 @@ class CommandHandler {
     PilotCommand _currentCommand;
     char _buffer[BUFFER_SIZE];
     uint8_t _bufferIndex = 0;
+    bool _compassCalibrationRequested = false;
 
     void ParseCommand(const char* line);
 
@@ -17,4 +18,5 @@ class CommandHandler {
 
     void Update();
     PilotCommand GetCommand() const;
+    bool ConsumeCompassCalibrationRequest();
 };

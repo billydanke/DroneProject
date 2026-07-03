@@ -26,6 +26,11 @@ void CommandHandler::Update() {
 }
 
 void CommandHandler::ParseCommand(const char* line) {
+    if (strcmp(line, "calibrate-compass") == 0) {
+        _compassCalibrationRequested = true;
+        return;
+    }
+
     float throttle, roll, pitch, yawRate;
     int arm, estop;
 
@@ -43,4 +48,10 @@ void CommandHandler::ParseCommand(const char* line) {
 
 PilotCommand CommandHandler::GetCommand() const {
     return _currentCommand;
+}
+
+bool CommandHandler::ConsumeCompassCalibrationRequest() {
+    bool requested = _compassCalibrationRequested;
+    _compassCalibrationRequested = false;
+    return requested;
 }

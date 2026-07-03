@@ -1,6 +1,7 @@
 #include "OrientationController.h"
 #include <Arduino.h>
 #include <float.h>
+#include <Preferences.h>
 #include <Wire.h>
 
 namespace {
@@ -14,6 +15,10 @@ namespace {
     constexpr uint8_t QMC_STATUS_OVERFLOW = 0x02;
     constexpr uint8_t QMC_SOFT_RESET = 0x80;
     constexpr uint8_t QMC_RECOMMENDED_SET_RESET_PERIOD = 0x01;
+
+    constexpr char MAGNETOMETER_PREFERENCES_NAMESPACE[] = "magcal";
+    constexpr uint32_t MAGNETOMETER_CALIBRATION_MAGIC = 0x514D4331UL;
+    constexpr uint16_t MAGNETOMETER_CALIBRATION_VERSION = 1;
 }
 
 OrientationController::OrientationController() { }
@@ -53,6 +58,11 @@ bool OrientationController::Init() {
     if (Wire.endTransmission(true) != 0) return false;
 
     if (!InitCompass()) return false;
+    if (LoadMagnetometerCalibration()) {
+        Serial.println("Loaded saved compass calibration.");
+    } else {
+        Serial.println("No saved compass calibration found; compass calibration required.");
+    }
 
     _lastMeasurementTimeUs = micros();
     _isInitialized = true;
@@ -107,13 +117,25 @@ float OrientationController::WrapAngleErrorDeg(float targetDeg, float measuredDe
 void OrientationController::StartCalibration() {
     _isOrientationCalibrationComplete = false;
     _isGyroCalibrationComplete = false;
-    _isMagnetometerCalibrationComplete = false;
     _isMagnetometerCalibrating = false;
     _hasCompassYawReference = false;
     _isOrientationCalibrating = _isInitialized;
     _gyroBiasX = 0.0f;
     _gyroBiasY = 0.0f;
     _gyroBiasZ = 0.0f;
+    _lastCompassData = CompassData();
+    ResetGyroCalibrationSamples();
+    ResetMagnetometerCalibrationSamples();
+}
+
+void OrientationController::StartCompassCalibration() {
+    if (!_isInitialized || !_isCompassInitialized) return;
+
+    _isMagnetometerCalibrationComplete = false;
+    _isMagnetometerCalibrating = true;
+    _isOrientationCalibrating = true;
+    _isOrientationCalibrationComplete = false;
+    _hasCompassYawReference = false;
     _magnetometerOffsetX = 0.0f;
     _magnetometerOffsetY = 0.0f;
     _magnetometerOffsetZ = 0.0f;
@@ -121,7 +143,6 @@ void OrientationController::StartCalibration() {
     _magnetometerScaleY = 1.0f;
     _magnetometerScaleZ = 1.0f;
     _lastCompassData = CompassData();
-    ResetGyroCalibrationSamples();
     ResetMagnetometerCalibrationSamples();
 }
 
@@ -208,7 +229,7 @@ void OrientationController::UpdateGyroCalibration(const IMUData& data) {
     _gyroBiasY = _gyroCalibrationSumY / sampleCount;
     _gyroBiasZ = _gyroCalibrationSumZ / sampleCount;
     _isGyroCalibrationComplete = true;
-    _isMagnetometerCalibrating = _isCompassInitialized;
+    _isMagnetometerCalibrating = _isCompassInitialized && !_isMagnetometerCalibrationComplete;
     _isOrientationCalibrationComplete = !_isMagnetometerCalibrating;
     _isOrientationCalibrating = !_isOrientationCalibrationComplete;
     _lastOrientation = Orientation();
@@ -240,6 +261,66 @@ CompassData OrientationController::ApplyMagnetometerCalibration(const CompassDat
     return calibratedData;
 }
 
+bool OrientationController::LoadMagnetometerCalibration() {
+    Preferences preferences;
+    if (!preferences.begin(MAGNETOMETER_PREFERENCES_NAMESPACE, true)) {
+        return false;
+    }
+
+    uint32_t magic = preferences.getUInt("magic", 0);
+    uint16_t version = preferences.getUShort("version", 0);
+    if (magic != MAGNETOMETER_CALIBRATION_MAGIC || version != MAGNETOMETER_CALIBRATION_VERSION) {
+        preferences.end();
+        return false;
+    }
+
+    _magnetometerOffsetX = preferences.getFloat("offX", 0.0f);
+    _magnetometerOffsetY = preferences.getFloat("offY", 0.0f);
+    _magnetometerOffsetZ = preferences.getFloat("offZ", 0.0f);
+    _magnetometerScaleX = preferences.getFloat("scaleX", 1.0f);
+    _magnetometerScaleY = preferences.getFloat("scaleY", 1.0f);
+    _magnetometerScaleZ = preferences.getFloat("scaleZ", 1.0f);
+    preferences.end();
+
+    if (!isfinite(_magnetometerOffsetX) || !isfinite(_magnetometerOffsetY) || !isfinite(_magnetometerOffsetZ) ||
+        !isfinite(_magnetometerScaleX) || !isfinite(_magnetometerScaleY) || !isfinite(_magnetometerScaleZ) ||
+        _magnetometerScaleX <= 0.0f || _magnetometerScaleY <= 0.0f || _magnetometerScaleZ <= 0.0f) {
+
+        _magnetometerOffsetX = 0.0f;
+        _magnetometerOffsetY = 0.0f;
+        _magnetometerOffsetZ = 0.0f;
+        _magnetometerScaleX = 1.0f;
+        _magnetometerScaleY = 1.0f;
+        _magnetometerScaleZ = 1.0f;
+        _isMagnetometerCalibrationComplete = false;
+        return false;
+    }
+
+    _isMagnetometerCalibrationComplete = true;
+    return true;
+}
+
+bool OrientationController::SaveMagnetometerCalibration() {
+    if (!_isMagnetometerCalibrationComplete) return false;
+
+    Preferences preferences;
+    if (!preferences.begin(MAGNETOMETER_PREFERENCES_NAMESPACE, false)) {
+        return false;
+    }
+
+    preferences.putUInt("magic", MAGNETOMETER_CALIBRATION_MAGIC);
+    preferences.putUShort("version", MAGNETOMETER_CALIBRATION_VERSION);
+    preferences.putFloat("offX", _magnetometerOffsetX);
+    preferences.putFloat("offY", _magnetometerOffsetY);
+    preferences.putFloat("offZ", _magnetometerOffsetZ);
+    preferences.putFloat("scaleX", _magnetometerScaleX);
+    preferences.putFloat("scaleY", _magnetometerScaleY);
+    preferences.putFloat("scaleZ", _magnetometerScaleZ);
+    preferences.end();
+
+    return true;
+}
+
 void OrientationController::UpdateMagnetometerCalibration(const CompassData& data) {
     if (!data.ReadSuccessful) return;
 
@@ -260,6 +341,7 @@ void OrientationController::UpdateMagnetometerCalibration(const CompassData& dat
     float radiusZ = (_magnetometerMaxZ - _magnetometerMinZ) * 0.5f;
 
     if (radiusX < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE || radiusY < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE || radiusZ < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE) {
+        Serial.println("Compass calibration range too small; rotate through more roll, pitch, and yaw.");
         ResetMagnetometerCalibrationSamples();
         return;
     }
@@ -278,6 +360,11 @@ void OrientationController::UpdateMagnetometerCalibration(const CompassData& dat
     _isOrientationCalibrating = false;
     _isOrientationCalibrationComplete = true;
     _hasCompassYawReference = false;
+    if (SaveMagnetometerCalibration()) {
+        Serial.println("Saved compass calibration.");
+    } else {
+        Serial.println("ERROR: Failed to save compass calibration.");
+    }
     _lastCompassData = ApplyMagnetometerCalibration(data);
     _lastMeasurementTimeUs = micros();
 }

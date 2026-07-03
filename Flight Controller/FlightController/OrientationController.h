@@ -43,6 +43,8 @@ class OrientationController {
     bool ReadCompassRegister(uint8_t registerAddress, uint8_t& value);
     CompassData GetCompassData();
     CompassData ApplyMagnetometerCalibration(const CompassData& data) const;
+    bool LoadMagnetometerCalibration();
+    bool SaveMagnetometerCalibration();
     void UpdateMagnetometerCalibration(const CompassData& data);
     void ResetMagnetometerCalibrationSamples();
     float GetTiltCompensatedHeadingDeg(const CompassData& data, float rollDeg, float pitchDeg) const;
@@ -58,6 +60,7 @@ class OrientationController {
     bool Init();
 
     void StartCalibration();
+    void StartCompassCalibration();
     bool IsCalibrating() const;
     bool IsCalibrationComplete() const;
     bool IsGyroCalibrating() const;
