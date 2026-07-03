@@ -32,7 +32,7 @@ void setup() {
         orientationController.StartCalibration();
         Serial.println("Keep the drone still while the gyroscope calibrates.");
     } else {
-        Serial.println("ERROR: Failed to initialize IMU over I2C.");
+        Serial.println("ERROR: Failed to initialize orientation sensors over I2C.");
     }
 
     if (motorsInitialized && orientationInitialized) {
@@ -55,24 +55,47 @@ void loop() {
     if (orientationController.IsCalibrating()) {
         motorController.Disarm();
 
-        static uint16_t lastReportedSampleCount = 0;
-        uint16_t sampleCount = orientationController.GetCalibrationSampleCount();
-        constexpr uint16_t calibrationReportInterval = 10;
+        static uint16_t lastReportedGyroSampleCount = 0;
+        static uint16_t lastReportedCompassSampleCount = 0;
+        static bool compassCalibrationPromptReported = false;
 
-        if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
-            Serial.print("Gyroscope calibration samples: ");
-            Serial.print(sampleCount);
-            Serial.print("/");
-            Serial.println(Config::GYRO_CALIBRATION_SAMPLE_COUNT);
+        if (orientationController.IsGyroCalibrating()) {
+            uint16_t sampleCount = orientationController.GetGyroCalibrationSampleCount();
+            constexpr uint16_t calibrationReportInterval = 10;
+
+            if (sampleCount / calibrationReportInterval != lastReportedGyroSampleCount / calibrationReportInterval) {
+                Serial.print("Gyroscope calibration samples: ");
+                Serial.print(sampleCount);
+                Serial.print("/");
+                Serial.println(Config::GYRO_CALIBRATION_SAMPLE_COUNT);
+            }
+
+            lastReportedGyroSampleCount = sampleCount;
+        } else if (orientationController.IsCompassCalibrating()) {
+            if (!compassCalibrationPromptReported) {
+                Serial.println("Gyroscope calibration complete.");
+                Serial.println("Rotate the drone through roll, pitch, and yaw while the compass calibrates.");
+                compassCalibrationPromptReported = true;
+            }
+
+            uint16_t sampleCount = orientationController.GetCompassCalibrationSampleCount();
+            constexpr uint16_t calibrationReportInterval = 50;
+
+            if (sampleCount / calibrationReportInterval != lastReportedCompassSampleCount / calibrationReportInterval) {
+                Serial.print("Compass calibration samples: ");
+                Serial.print(sampleCount);
+                Serial.print("/");
+                Serial.println(Config::MAGNETOMETER_CALIBRATION_SAMPLE_COUNT);
+            }
+
+            lastReportedCompassSampleCount = sampleCount;
         }
-
-        lastReportedSampleCount = sampleCount;
         return;
     }
 
     static bool calibrationCompleteReported = false;
     if (orientationController.IsCalibrationComplete() && !calibrationCompleteReported) {
-        Serial.println("Gyroscope calibration complete.");
+        Serial.println("Orientation calibration complete.");
         calibrationCompleteReported = true;
     }
 

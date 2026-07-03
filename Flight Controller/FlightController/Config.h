@@ -10,7 +10,7 @@ namespace Config {
     // Shared I2C Bus
     constexpr int I2C_SDA_PIN = 21;
     constexpr int I2C_SCL_PIN = 22;
-    constexpr uint32_t I2C_CLOCK_HZ = 400000;
+    constexpr uint32_t I2C_CLOCK_HZ = 100000;
 
     // ESC PWM Pins
     constexpr int MOTOR_1_PIN = 27;
@@ -45,8 +45,9 @@ namespace Config {
     constexpr uint8_t QMC5883L_CONTINUOUS_MODE = 0x01;
     constexpr float MAGNETOMETER_YAW_FILTER_TIME_CONSTANT_S = 2.0f;
     constexpr uint16_t MAGNETOMETER_CALIBRATION_SAMPLE_COUNT = 500;
-    constexpr float MAGNETOMETER_MIN_VALID_MAGNITUDE = 0.01f;
-    constexpr float MAGNETOMETER_MAX_VALID_MAGNITUDE = 10000.0f;
+    constexpr float MAGNETOMETER_MIN_VALID_MAGNITUDE = 50.0f;
+    constexpr float MAGNETOMETER_MAX_VALID_MAGNITUDE = 30000.0f;
+    constexpr float MAGNETOMETER_MIN_CALIBRATION_RANGE = 500.0f;
 
     // BMP180 Barometer Configuration
     constexpr int BMP180_ADDRESS = 0x77;

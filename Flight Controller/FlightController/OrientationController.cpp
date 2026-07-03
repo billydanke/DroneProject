@@ -1,13 +1,32 @@
 #include "OrientationController.h"
 #include <Arduino.h>
+#include <float.h>
 #include <Wire.h>
+
+namespace {
+    constexpr uint8_t QMC_DATA_REGISTER = 0x00;
+    constexpr uint8_t QMC_STATUS_REGISTER = 0x06;
+    constexpr uint8_t QMC_CONTROL_1_REGISTER = 0x09;
+    constexpr uint8_t QMC_CONTROL_2_REGISTER = 0x0A;
+    constexpr uint8_t QMC_SET_RESET_PERIOD_REGISTER = 0x0B;
+
+    constexpr uint8_t QMC_STATUS_DATA_READY = 0x01;
+    constexpr uint8_t QMC_STATUS_OVERFLOW = 0x02;
+    constexpr uint8_t QMC_SOFT_RESET = 0x80;
+    constexpr uint8_t QMC_RECOMMENDED_SET_RESET_PERIOD = 0x01;
+}
 
 OrientationController::OrientationController() { }
 
 bool OrientationController::Init() {
     _isInitialized = false;
-    _isCalibrating = false;
-    _isCalibrationComplete = false;
+    _isOrientationCalibrating = false;
+    _isOrientationCalibrationComplete = false;
+    _isGyroCalibrationComplete = false;
+    _isCompassInitialized = false;
+    _isMagnetometerCalibrating = false;
+    _isMagnetometerCalibrationComplete = false;
+    _hasCompassYawReference = false;
 
     // Wake the MPU6050 (clears SLEEP bit in PWR_MGMT_1).
     Wire.beginTransmission(Config::MPU_ADDRESS);
@@ -33,40 +52,115 @@ bool OrientationController::Init() {
     Wire.write(0x00);
     if (Wire.endTransmission(true) != 0) return false;
 
+    if (!InitCompass()) return false;
+
     _lastMeasurementTimeUs = micros();
     _isInitialized = true;
     return true;
 }
 
+bool OrientationController::InitCompass() {
+    if (!WriteCompassRegister(QMC_CONTROL_2_REGISTER, QMC_SOFT_RESET)) return false;
+    delay(10);
+
+    if (!WriteCompassRegister(QMC_SET_RESET_PERIOD_REGISTER, QMC_RECOMMENDED_SET_RESET_PERIOD)) return false;
+
+    uint8_t controlValue = Config::QMC5883L_OVERSAMPLING_512 | Config::QMC5883L_RANGE_2G | Config::QMC5883L_OUTPUT_RATE_100_HZ | Config::QMC5883L_CONTINUOUS_MODE;
+    if (!WriteCompassRegister(QMC_CONTROL_1_REGISTER, controlValue)) return false;
+
+    _isCompassInitialized = true;
+    return true;
+}
+
+bool OrientationController::WriteCompassRegister(uint8_t registerAddress, uint8_t value) {
+    Wire.beginTransmission(Config::QMC5883L_ADDRESS);
+    Wire.write(registerAddress);
+    Wire.write(value);
+    return Wire.endTransmission(true) == 0;
+}
+
+bool OrientationController::ReadCompassRegister(uint8_t registerAddress, uint8_t& value) {
+    Wire.beginTransmission(Config::QMC5883L_ADDRESS);
+    Wire.write(registerAddress);
+    if (Wire.endTransmission(false) != 0) return false;
+
+    size_t bytesReceived = Wire.requestFrom(Config::QMC5883L_ADDRESS, 1, true);
+    if (bytesReceived != 1 || Wire.available() < 1) return false;
+
+    value = Wire.read();
+    return true;
+}
+
+float OrientationController::NormalizeAngleDeg(float angleDeg) {
+    float normalized = fmodf(angleDeg, 360.0f);
+    if (normalized < 0.0f) normalized += 360.0f;
+    return normalized;
+}
+
+float OrientationController::WrapAngleErrorDeg(float targetDeg, float measuredDeg) {
+    float errorDeg = fmodf(targetDeg - measuredDeg + 180.0f, 360.0f);
+    if (errorDeg < 0.0f) errorDeg += 360.0f;
+
+    return errorDeg - 180.0f;
+}
+
 void OrientationController::StartCalibration() {
-    _isCalibrationComplete = false;
-    _isCalibrating = _isInitialized;
+    _isOrientationCalibrationComplete = false;
+    _isGyroCalibrationComplete = false;
+    _isMagnetometerCalibrationComplete = false;
+    _isMagnetometerCalibrating = false;
+    _hasCompassYawReference = false;
+    _isOrientationCalibrating = _isInitialized;
     _gyroBiasX = 0.0f;
     _gyroBiasY = 0.0f;
     _gyroBiasZ = 0.0f;
-    ResetCalibrationSamples();
+    _magnetometerOffsetX = 0.0f;
+    _magnetometerOffsetY = 0.0f;
+    _magnetometerOffsetZ = 0.0f;
+    _magnetometerScaleX = 1.0f;
+    _magnetometerScaleY = 1.0f;
+    _magnetometerScaleZ = 1.0f;
+    _lastCompassData = CompassData();
+    ResetGyroCalibrationSamples();
+    ResetMagnetometerCalibrationSamples();
 }
 
 bool OrientationController::IsCalibrating() const {
-    return _isCalibrating;
+    return _isOrientationCalibrating;
 }
 
 bool OrientationController::IsCalibrationComplete() const {
-    return _isCalibrationComplete;
+    return _isOrientationCalibrationComplete;
 }
 
-uint16_t OrientationController::GetCalibrationSampleCount() const {
-    return _calibrationSampleCount;
+bool OrientationController::IsGyroCalibrating() const {
+    return _isOrientationCalibrating && !_isGyroCalibrationComplete;
 }
 
-void OrientationController::ResetCalibrationSamples() {
-    _calibrationSampleCount = 0;
+bool OrientationController::IsCompassCalibrating() const {
+    return _isMagnetometerCalibrating;
+}
+
+uint16_t OrientationController::GetGyroCalibrationSampleCount() const {
+    return _gyroCalibrationSampleCount;
+}
+
+uint16_t OrientationController::GetCompassCalibrationSampleCount() const {
+    return _magnetometerCalibrationSampleCount;
+}
+
+CompassData OrientationController::GetLastCompassData() const {
+    return _lastCompassData;
+}
+
+void OrientationController::ResetGyroCalibrationSamples() {
+    _gyroCalibrationSampleCount = 0;
     _gyroCalibrationSumX = 0.0f;
     _gyroCalibrationSumY = 0.0f;
     _gyroCalibrationSumZ = 0.0f;
 }
 
-void OrientationController::UpdateCalibration(const IMUData& data) {
+void OrientationController::UpdateGyroCalibration(const IMUData& data) {
     float gyroMagnitude = sqrt(
         data.GyroX * data.GyroX +
         data.GyroY * data.GyroY +
@@ -84,8 +178,8 @@ void OrientationController::UpdateCalibration(const IMUData& data) {
         return;
     }
 
-    if (_calibrationSampleCount > 0) {
-        float sampleCount = static_cast<float>(_calibrationSampleCount);
+    if (_gyroCalibrationSampleCount > 0) {
+        float sampleCount = static_cast<float>(_gyroCalibrationSampleCount);
         float averageGyroX = _gyroCalibrationSumX / sampleCount;
         float averageGyroY = _gyroCalibrationSumY / sampleCount;
         float averageGyroZ = _gyroCalibrationSumZ / sampleCount;
@@ -103,20 +197,153 @@ void OrientationController::UpdateCalibration(const IMUData& data) {
     _gyroCalibrationSumX += data.GyroX;
     _gyroCalibrationSumY += data.GyroY;
     _gyroCalibrationSumZ += data.GyroZ;
-    _calibrationSampleCount++;
+    _gyroCalibrationSampleCount++;
 
-    if (_calibrationSampleCount < Config::GYRO_CALIBRATION_SAMPLE_COUNT) {
+    if (_gyroCalibrationSampleCount < Config::GYRO_CALIBRATION_SAMPLE_COUNT) {
         return;
     }
 
-    float sampleCount = static_cast<float>(_calibrationSampleCount);
+    float sampleCount = static_cast<float>(_gyroCalibrationSampleCount);
     _gyroBiasX = _gyroCalibrationSumX / sampleCount;
     _gyroBiasY = _gyroCalibrationSumY / sampleCount;
     _gyroBiasZ = _gyroCalibrationSumZ / sampleCount;
-    _isCalibrating = false;
-    _isCalibrationComplete = true;
+    _isGyroCalibrationComplete = true;
+    _isMagnetometerCalibrating = _isCompassInitialized;
+    _isOrientationCalibrationComplete = !_isMagnetometerCalibrating;
+    _isOrientationCalibrating = !_isOrientationCalibrationComplete;
     _lastOrientation = Orientation();
     _lastMeasurementTimeUs = micros();
+}
+
+void OrientationController::ResetMagnetometerCalibrationSamples() {
+    _magnetometerCalibrationSampleCount = 0;
+
+    _magnetometerMinX = FLT_MAX;
+    _magnetometerMinY = FLT_MAX;
+    _magnetometerMinZ = FLT_MAX;
+    _magnetometerMaxX = -FLT_MAX;
+    _magnetometerMaxY = -FLT_MAX;
+    _magnetometerMaxZ = -FLT_MAX;
+}
+
+CompassData OrientationController::ApplyMagnetometerCalibration(const CompassData& data) const {
+    CompassData calibratedData = data;
+
+    calibratedData.CompassX = (data.RawX - _magnetometerOffsetX) * _magnetometerScaleX;
+    calibratedData.CompassY = (data.RawY - _magnetometerOffsetY) * _magnetometerScaleY;
+    calibratedData.CompassZ = (data.RawZ - _magnetometerOffsetZ) * _magnetometerScaleZ;
+
+    calibratedData.MagneticFieldMagnitude = sqrt(calibratedData.CompassX * calibratedData.CompassX + calibratedData.CompassY * calibratedData.CompassY + calibratedData.CompassZ * calibratedData.CompassZ);
+
+    calibratedData.IsCalibrated = _isMagnetometerCalibrationComplete;
+
+    return calibratedData;
+}
+
+void OrientationController::UpdateMagnetometerCalibration(const CompassData& data) {
+    if (!data.ReadSuccessful) return;
+
+    _magnetometerMinX = min(_magnetometerMinX, data.RawX);
+    _magnetometerMinY = min(_magnetometerMinY, data.RawY);
+    _magnetometerMinZ = min(_magnetometerMinZ, data.RawZ);
+    _magnetometerMaxX = max(_magnetometerMaxX, data.RawX);
+    _magnetometerMaxY = max(_magnetometerMaxY, data.RawY);
+    _magnetometerMaxZ = max(_magnetometerMaxZ, data.RawZ);
+    _magnetometerCalibrationSampleCount++;
+
+    if (_magnetometerCalibrationSampleCount < Config::MAGNETOMETER_CALIBRATION_SAMPLE_COUNT) {
+        return;
+    }
+
+    float radiusX = (_magnetometerMaxX - _magnetometerMinX) * 0.5f;
+    float radiusY = (_magnetometerMaxY - _magnetometerMinY) * 0.5f;
+    float radiusZ = (_magnetometerMaxZ - _magnetometerMinZ) * 0.5f;
+
+    if (radiusX < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE || radiusY < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE || radiusZ < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE) {
+        ResetMagnetometerCalibrationSamples();
+        return;
+    }
+
+    _magnetometerOffsetX = (_magnetometerMaxX + _magnetometerMinX) * 0.5f;
+    _magnetometerOffsetY = (_magnetometerMaxY + _magnetometerMinY) * 0.5f;
+    _magnetometerOffsetZ = (_magnetometerMaxZ + _magnetometerMinZ) * 0.5f;
+
+    float averageRadius = (radiusX + radiusY + radiusZ) / 3.0f;
+    _magnetometerScaleX = averageRadius / radiusX;
+    _magnetometerScaleY = averageRadius / radiusY;
+    _magnetometerScaleZ = averageRadius / radiusZ;
+
+    _isMagnetometerCalibrating = false;
+    _isMagnetometerCalibrationComplete = true;
+    _isOrientationCalibrating = false;
+    _isOrientationCalibrationComplete = true;
+    _hasCompassYawReference = false;
+    _lastCompassData = ApplyMagnetometerCalibration(data);
+    _lastMeasurementTimeUs = micros();
+}
+
+CompassData OrientationController::GetCompassData() {
+    CompassData data;
+
+    if (!_isCompassInitialized) return data;
+
+    uint8_t status = 0;
+    if (!ReadCompassRegister(QMC_STATUS_REGISTER, status)) return data;
+    if ((status & QMC_STATUS_OVERFLOW) != 0 || (status & QMC_STATUS_DATA_READY) == 0) {
+        return data;
+    }
+
+    Wire.beginTransmission(Config::QMC5883L_ADDRESS);
+    Wire.write(QMC_DATA_REGISTER);
+    if (Wire.endTransmission(false) != 0) {
+        return data;
+    }
+
+    size_t bytesReceived = Wire.requestFrom(Config::QMC5883L_ADDRESS, 6, true);
+    if (bytesReceived != 6 || Wire.available() < 6) {
+        while (Wire.available() > 0) {
+            Wire.read();
+        }
+        return data;
+    }
+
+    int16_t rawX = static_cast<int16_t>(Wire.read() | (Wire.read() << 8));
+    int16_t rawY = static_cast<int16_t>(Wire.read() | (Wire.read() << 8));
+    int16_t rawZ = static_cast<int16_t>(Wire.read() | (Wire.read() << 8));
+    data.RawX = static_cast<float>(rawX);
+    data.RawY = static_cast<float>(rawY);
+    data.RawZ = static_cast<float>(rawZ);
+
+    data.CompassX = data.RawX;
+    data.CompassY = data.RawY;
+    data.CompassZ = data.RawZ;
+
+    data.MagneticFieldMagnitude = sqrt(data.CompassX * data.CompassX + data.CompassY * data.CompassY + data.CompassZ * data.CompassZ);
+
+    data.ReadSuccessful = data.MagneticFieldMagnitude >= Config::MAGNETOMETER_MIN_VALID_MAGNITUDE && data.MagneticFieldMagnitude <= Config::MAGNETOMETER_MAX_VALID_MAGNITUDE;
+
+    if (data.ReadSuccessful && _isMagnetometerCalibrationComplete) {
+        data = ApplyMagnetometerCalibration(data);
+        data.IsCalibrated = true;
+    }
+
+    _lastCompassData = data;
+    return data;
+}
+
+float OrientationController::GetTiltCompensatedHeadingDeg(const CompassData& data, float rollDeg, float pitchDeg) const {
+    float rollRad = rollDeg * DEG_TO_RAD;
+    float pitchRad = pitchDeg * DEG_TO_RAD;
+
+    float cosRoll = cos(rollRad);
+    float sinRoll = sin(rollRad);
+    float cosPitch = cos(pitchRad);
+    float sinPitch = sin(pitchRad);
+
+    float horizontalX = data.CompassX * cosPitch + data.CompassZ * sinPitch;
+    float horizontalY = data.CompassX * sinRoll * sinPitch + data.CompassY * cosRoll - data.CompassZ * sinRoll * cosPitch;
+
+    return NormalizeAngleDeg(atan2(horizontalY, horizontalX) * RAD_TO_DEG);
 }
 
 IMUData OrientationController::GetIMUData() {
@@ -173,8 +400,13 @@ Orientation OrientationController::GetOrientation() {
         return failedOrientation;
     }
 
-    if (_isCalibrating) {
-        UpdateCalibration(rawData);
+    if (_isOrientationCalibrating) {
+        if (!_isGyroCalibrationComplete) {
+            UpdateGyroCalibration(rawData);
+        }
+        else if (_isMagnetometerCalibrating) {
+            UpdateMagnetometerCalibration(GetCompassData());
+        }
 
         Orientation calibrationOrientation = _lastOrientation;
         calibrationOrientation.ReadSuccessful = true;
@@ -198,15 +430,31 @@ Orientation OrientationController::GetOrientation() {
     float gyroscopeYaw = _lastOrientation.YawDeg + (rawData.GyroZ * deltaTimeSeconds);
 
     // Convert the filter time constant to a sample-rate-independent blend factor.
-    float filterAlpha =
-        Config::ORIENTATION_FILTER_TIME_CONSTANT_S /
-        (Config::ORIENTATION_FILTER_TIME_CONSTANT_S + deltaTimeSeconds);
+    float filterAlpha = Config::ORIENTATION_FILTER_TIME_CONSTANT_S / (Config::ORIENTATION_FILTER_TIME_CONSTANT_S + deltaTimeSeconds);
     float currentRoll = filterAlpha * gyroscopeRoll + (1.0f - filterAlpha) * accelerometerRoll;
     float currentPitch = filterAlpha * gyroscopePitch + (1.0f - filterAlpha) * accelerometerPitch;
     
-    // For yaw we only have the gyro to go off of. If we don't want accumulating error
-    // then we need to hook in a compass (not sure if a compass would be noisy or not so we may also want a filter here too).
     float currentYaw = gyroscopeYaw;
+    CompassData compassData = GetCompassData();
+
+    if (compassData.ReadSuccessful && compassData.IsCalibrated) {
+        float compassHeading = GetTiltCompensatedHeadingDeg(compassData, currentRoll, currentPitch);
+        compassData.HeadingDeg = compassHeading;
+        _lastCompassData = compassData;
+
+        if (!_hasCompassYawReference) {
+            currentYaw = compassHeading;
+            _hasCompassYawReference = true;
+        }
+        else {
+            float yawErrorDeg = WrapAngleErrorDeg(compassHeading, gyroscopeYaw);
+            float yawFilterAlpha = Config::MAGNETOMETER_YAW_FILTER_TIME_CONSTANT_S / (Config::MAGNETOMETER_YAW_FILTER_TIME_CONSTANT_S + deltaTimeSeconds);
+            currentYaw = NormalizeAngleDeg(gyroscopeYaw + ((1.0f - yawFilterAlpha) * yawErrorDeg));
+        }
+    }
+    else {
+        currentYaw = NormalizeAngleDeg(currentYaw);
+    }
 
     Orientation currentOrientation = Orientation {currentRoll, currentPitch, currentYaw, true, rawData.GyroX, rawData.GyroY, rawData.GyroZ};
     
