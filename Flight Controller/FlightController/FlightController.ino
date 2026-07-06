@@ -5,15 +5,18 @@
 #include "CommonStructs.h"
 #include "AltitudeHandler.h"
 #include "CommandHandler.h"
+#include "GPSHandler.h"
 #include "MotorController.h"
 #include "OrientationController.h"
 
 FlightState flightState;
 CommandHandler commandHandler;
 AltitudeHandler altitudeHandler;
+GPSHandler gpsHandler;
 OrientationController orientationController;
 MotorController motorController(flightState);
 bool altitudeInitialized = false;
+bool gpsInitialized = false;
 
 void setup() {
     Serial.begin(Config::SERIAL_BAUD);
@@ -27,6 +30,7 @@ void setup() {
     bool motorsInitialized = motorController.Init();
     bool orientationInitialized = orientationController.Init();
     altitudeInitialized = altitudeHandler.Init();
+    gpsInitialized = gpsHandler.Init();
 
     if (!motorsInitialized) {
         Serial.println("ERROR: Failed to initialize DShot motor outputs.");
@@ -45,6 +49,12 @@ void setup() {
         Serial.println("ERROR: Failed to initialize BMP180 barometer over I2C.");
     }
 
+    if (gpsInitialized) {
+        Serial.println("GPS UART initialized.");
+    } else {
+        Serial.println("ERROR: Failed to initialize GPS UART.");
+    }
+
     if (motorsInitialized && orientationInitialized) {
         Serial.println("Flight Controller initialized!");
     }
@@ -53,6 +63,7 @@ void setup() {
 void loop() {
 
     commandHandler.Update();
+    gpsHandler.Update();
 
     static bool orientationCalibrationCompleteReported = false;
     static bool altitudeCalibrationCompleteReported = false;
@@ -150,6 +161,7 @@ void loop() {
     }
 
     BarometerData altitude = altitudeHandler.GetAltitude();
+    GPSData gps = gpsHandler.GetGPSData();
 
     if (altitudeHandler.IsCalibrating()) {
         motorController.Disarm();
@@ -185,10 +197,29 @@ void loop() {
         Serial.print(altitude.AltitudeMeters);
         Serial.print(" m\tVSpeed: ");
         Serial.print(altitude.VerticalSpeedMetersPerSecond);
-        Serial.println(" m/s");
+        Serial.print(" m/s");
     } else {
-        Serial.println("unavailable");
+        Serial.print("unavailable");
     }
+
+    Serial.print("\tGPS: ");
+    if (!gpsInitialized || !gps.ReadSuccessful) {
+        Serial.print("no data");
+    } else if (gps.IsLocationFixed) {
+        Serial.print(gps.LatitudeDeg, 6);
+        Serial.print(",");
+        Serial.print(gps.LongitudeDeg, 6);
+        Serial.print("\tGS:");
+        Serial.print(gps.GroundSpeedMetersPerSecond);
+        Serial.print(" m/s\tSats:");
+        Serial.print(gps.SatellitesConnectedCount);
+        Serial.print("\tHDOP:");
+        Serial.print(gps.Hdop);
+    } else {
+        Serial.print("no fix\tSats:");
+        Serial.print(gps.SatellitesConnectedCount);
+    }
+    Serial.println();
 
     PilotCommand pilotCommand = commandHandler.GetCommand();
 
