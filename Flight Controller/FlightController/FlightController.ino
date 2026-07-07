@@ -35,6 +35,7 @@ void setup() {
 
     if (!motorsInitialized) {
         Serial.println("ERROR: Failed to initialize DShot motor outputs.");
+        sleep(2);
     }
 
     if (orientationInitialized) {
@@ -44,6 +45,7 @@ void setup() {
         } else {
             startupCalibrationSuccessful = false;
             Serial.println("ERROR: Gyroscope calibration failed.");
+            sleep(2);
         }
 
         if (!orientationController.HasValidCompassCalibration()) {
@@ -51,6 +53,7 @@ void setup() {
         }
     } else {
         Serial.println("ERROR: Failed to initialize orientation sensors over I2C.");
+        sleep(2);
     }
 
     if (altitudeInitialized) {
@@ -61,19 +64,23 @@ void setup() {
         } else {
             startupCalibrationSuccessful = false;
             Serial.println("ERROR: Barometer calibration failed.");
+            sleep(2);
         }
     } else {
         Serial.println("ERROR: Failed to initialize BMP180 barometer over I2C.");
+        sleep(2);
     }
 
     if (gpsInitialized) {
         Serial.println("GPS UART initialized.");
     } else {
         Serial.println("ERROR: Failed to initialize GPS UART.");
+        sleep(2);
     }
 
     if (motorsInitialized && orientationInitialized && altitudeInitialized && startupCalibrationSuccessful) {
         Serial.println("Flight Controller initialized!");
+        sleep(2);
     }
 }
 
@@ -115,6 +122,7 @@ void loop() {
     if (!orientation.ReadSuccessful) {
         motorController.EmergencyStop();
         Serial.println("ERROR: Failed to read IMU data.");
+        sleep(1);
         return;
     }
 

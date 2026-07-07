@@ -60,11 +60,11 @@ namespace Config {
     constexpr float ALTITUDE_FILTER_TIME_CONSTANT_S = 1.0f;
 
     // GPS Configuration
-    constexpr unsigned long GPS_BAUD = 9600;
+    constexpr unsigned long GPS_BAUD = 115200;
     constexpr int GPS_RX_PIN = 16;
     constexpr int GPS_TX_PIN = 17;
     constexpr uint32_t GPS_FIX_TIMEOUT_MS = 2000;
-    constexpr uint16_t GPS_MAX_BYTES_PER_UPDATE = 128;
+    constexpr uint16_t GPS_MAX_BYTES_PER_UPDATE = 512;
 
     // Gyroscope calibration
     constexpr uint16_t GYRO_CALIBRATION_SAMPLE_COUNT = 100;

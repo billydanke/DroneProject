@@ -24,7 +24,11 @@ void GPSHandler::Update() {
     bool hasNewSentence = false;
 
     while (_serial.available() > 0 && bytesProcessed < Config::GPS_MAX_BYTES_PER_UPDATE) {
-        char c = static_cast<char>(_serial.read());
+
+        char c = _serial.read();
+
+        Serial.write(c);
+
         if (_gps.encode(c)) {
             hasNewSentence = true;
         }
