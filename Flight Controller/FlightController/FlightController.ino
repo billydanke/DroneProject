@@ -33,6 +33,8 @@ void setup() {
     gpsInitialized = gpsHandler.Init();
     bool startupCalibrationSuccessful = true;
 
+    sleep(5);
+
     if (!motorsInitialized) {
         Serial.println("ERROR: Failed to initialize DShot motor outputs.");
         sleep(2);
