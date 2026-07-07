@@ -31,20 +31,37 @@ void setup() {
     bool orientationInitialized = orientationController.Init();
     altitudeInitialized = altitudeHandler.Init();
     gpsInitialized = gpsHandler.Init();
+    bool startupCalibrationSuccessful = true;
 
     if (!motorsInitialized) {
         Serial.println("ERROR: Failed to initialize DShot motor outputs.");
     }
 
     if (orientationInitialized) {
-        orientationController.StartCalibration();
         Serial.println("Keep the drone still while the gyroscope calibrates.");
+        if (orientationController.CalibrateGyroscope()) {
+            Serial.println("Gyroscope calibration complete.");
+        } else {
+            startupCalibrationSuccessful = false;
+            Serial.println("ERROR: Gyroscope calibration failed.");
+        }
+
+        if (!orientationController.HasValidCompassCalibration()) {
+            Serial.println("Compass calibration required before arming. Send 'calibrate-compass' while disarmed.");
+        }
     } else {
         Serial.println("ERROR: Failed to initialize orientation sensors over I2C.");
     }
 
     if (altitudeInitialized) {
         Serial.println("BMP180 barometer initialized.");
+        Serial.println("Keep the drone at takeoff altitude while the barometer calibrates.");
+        if (altitudeHandler.CalibrateBarometer()) {
+            Serial.println("Altitude calibration complete.");
+        } else {
+            startupCalibrationSuccessful = false;
+            Serial.println("ERROR: Barometer calibration failed.");
+        }
     } else {
         Serial.println("ERROR: Failed to initialize BMP180 barometer over I2C.");
     }
@@ -55,7 +72,7 @@ void setup() {
         Serial.println("ERROR: Failed to initialize GPS UART.");
     }
 
-    if (motorsInitialized && orientationInitialized) {
+    if (motorsInitialized && orientationInitialized && altitudeInitialized && startupCalibrationSuccessful) {
         Serial.println("Flight Controller initialized!");
     }
 }
@@ -65,37 +82,30 @@ void loop() {
     commandHandler.Update();
     gpsHandler.Update();
 
-    static bool orientationCalibrationCompleteReported = false;
-    static bool altitudeCalibrationCompleteReported = false;
-    static bool compassCalibrationPromptReported = false;
-    static bool startupAltitudeCalibrationStarted = false;
-
     if (commandHandler.ConsumeCompassCalibrationRequest()) {
         if (flightState.IsArmed) {
             Serial.println("ERROR: Compass calibration request denied while armed.");
-        } else if (altitudeHandler.IsCalibrating()) {
-            Serial.println("ERROR: Compass calibration request denied while altitude is calibrating.");
         } else {
-            orientationController.StartCompassCalibration();
-            orientationCalibrationCompleteReported = false;
-            compassCalibrationPromptReported = false;
+            motorController.Disarm();
             Serial.println("Rotate the drone through roll, pitch, and yaw while the compass calibrates.");
+            if (orientationController.CalibrateCompass()) {
+                Serial.println("Compass calibration complete.");
+            } else {
+                Serial.println("ERROR: Compass calibration failed.");
+            }
         }
     }
 
     if (commandHandler.ConsumeAltitudeCalibrationRequest()) {
         if (flightState.IsArmed) {
             Serial.println("ERROR: Altitude calibration request denied while armed.");
-        } else if (orientationController.IsCalibrating()) {
-            Serial.println("ERROR: Altitude calibration request denied while orientation is calibrating.");
         } else {
-            altitudeHandler.StartCalibration();
-            if (altitudeHandler.IsCalibrating()) {
-                altitudeCalibrationCompleteReported = false;
-                startupAltitudeCalibrationStarted = true;
-                Serial.println("Keep the drone at takeoff altitude while the barometer calibrates.");
+            motorController.Disarm();
+            Serial.println("Keep the drone at takeoff altitude while the barometer calibrates.");
+            if (altitudeHandler.CalibrateBarometer()) {
+                Serial.println("Altitude calibration complete.");
             } else {
-                Serial.println("ERROR: Altitude calibration request failed; barometer is not initialized.");
+                Serial.println("ERROR: Altitude calibration failed.");
             }
         }
     }
@@ -108,83 +118,8 @@ void loop() {
         return;
     }
 
-    if (orientationController.IsCalibrating()) {
-        motorController.Disarm();
-
-        static uint16_t lastReportedGyroSampleCount = 0;
-        static uint16_t lastReportedCompassSampleCount = 0;
-
-        if (orientationController.IsGyroCalibrating()) {
-            uint16_t sampleCount = orientationController.GetGyroCalibrationSampleCount();
-            constexpr uint16_t calibrationReportInterval = 10;
-
-            if (sampleCount / calibrationReportInterval != lastReportedGyroSampleCount / calibrationReportInterval) {
-                Serial.print("Gyroscope calibration samples: ");
-                Serial.print(sampleCount);
-                Serial.print("/");
-                Serial.println(Config::GYRO_CALIBRATION_SAMPLE_COUNT);
-            }
-
-            lastReportedGyroSampleCount = sampleCount;
-        } else if (orientationController.IsCompassCalibrating()) {
-            if (!compassCalibrationPromptReported) {
-                Serial.println("Gyroscope calibration complete.");
-                Serial.println("Rotate the drone through roll, pitch, and yaw while the compass calibrates.");
-                compassCalibrationPromptReported = true;
-            }
-
-            uint16_t sampleCount = orientationController.GetCompassCalibrationSampleCount();
-            constexpr uint16_t calibrationReportInterval = 50;
-
-            if (sampleCount / calibrationReportInterval != lastReportedCompassSampleCount / calibrationReportInterval) {
-                Serial.print("Compass calibration samples: ");
-                Serial.print(sampleCount);
-                Serial.print("/");
-                Serial.println(Config::MAGNETOMETER_CALIBRATION_SAMPLE_COUNT);
-            }
-
-            lastReportedCompassSampleCount = sampleCount;
-        }
-        return;
-    }
-
-    if (orientationController.IsCalibrationComplete() && !orientationCalibrationCompleteReported) {
-        Serial.println("Orientation calibration complete.");
-        orientationCalibrationCompleteReported = true;
-    }
-
-    if (!startupAltitudeCalibrationStarted && altitudeInitialized && !altitudeHandler.IsCalibrationComplete()) {
-        altitudeHandler.StartCalibration();
-        startupAltitudeCalibrationStarted = true;
-        altitudeCalibrationCompleteReported = false;
-        Serial.println("Keep the drone at takeoff altitude while the barometer calibrates.");
-    }
-
     BarometerData altitude = altitudeHandler.GetAltitude();
     GPSData gps = gpsHandler.GetGPSData();
-
-    if (altitudeHandler.IsCalibrating()) {
-        motorController.Disarm();
-
-        static uint16_t lastReportedAltitudeSampleCount = 0;
-        uint16_t sampleCount = altitudeHandler.GetCalibrationSampleCount();
-        constexpr uint16_t calibrationReportInterval = 10;
-
-        if (sampleCount / calibrationReportInterval != lastReportedAltitudeSampleCount / calibrationReportInterval) {
-            Serial.print("Altitude calibration samples: ");
-            Serial.print(sampleCount);
-            Serial.print("/");
-            Serial.println(Config::BAROMETER_CALIBRATION_SAMPLE_COUNT);
-        }
-
-        lastReportedAltitudeSampleCount = sampleCount;
-        return;
-    }
-
-    if (altitudeHandler.IsCalibrationComplete() && !altitudeCalibrationCompleteReported) {
-        Serial.println("Altitude calibration complete.");
-        altitudeCalibrationCompleteReported = true;
-    }
 
     Serial.print("Roll: ");
     Serial.print(orientation.RollDeg);
@@ -237,6 +172,21 @@ void loop() {
         targetYawCaptured = false;
 
         if (!pilotCommand.DoArm) return;
+
+        if (!orientationController.IsCalibrationComplete()) {
+            Serial.println("ERROR: Arm request denied; gyroscope calibration required.");
+            return;
+        }
+
+        if (!orientationController.HasValidCompassCalibration()) {
+            Serial.println("ERROR: Arm request denied; compass calibration required.");
+            return;
+        }
+
+        if (altitudeInitialized && !altitudeHandler.IsCalibrationComplete()) {
+            Serial.println("ERROR: Arm request denied; altitude calibration required.");
+            return;
+        }
 
         if (!motorController.Arm(throttle)) {
             Serial.println("ERROR: Motor arm request denied.");

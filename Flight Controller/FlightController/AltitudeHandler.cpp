@@ -57,6 +57,40 @@ void AltitudeHandler::StartCalibration() {
     _hasFilteredAltitude = false;
 }
 
+bool AltitudeHandler::CalibrateBarometer() {
+    StartCalibration();
+    if (!_isCalibrating) return false;
+
+    uint32_t calibrationStartMs = millis();
+    uint16_t lastReportedSampleCount = 0;
+
+    while (IsCalibrating()) {
+        GetAltitude();
+
+        uint16_t sampleCount = GetCalibrationSampleCount();
+        constexpr uint16_t calibrationReportInterval = 10;
+        if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
+            Serial.print("Altitude calibration samples: ");
+            Serial.print(sampleCount);
+            Serial.print("/");
+            Serial.println(Config::BAROMETER_CALIBRATION_SAMPLE_COUNT);
+        }
+        lastReportedSampleCount = sampleCount;
+
+        if (millis() - calibrationStartMs > Config::BAROMETER_CALIBRATION_TIMEOUT_MS) {
+            _isCalibrating = false;
+            _isCalibrationComplete = false;
+            return false;
+        }
+
+        delayMicroseconds(1000000UL / Config::LOOP_RATE_HZ);
+    }
+
+    _lastUpdateTimeUs = micros();
+    _lastSuccessfulMeasurementTimeUs = _lastUpdateTimeUs;
+    return _isCalibrationComplete;
+}
+
 bool AltitudeHandler::IsCalibrating() const {
     return _isCalibrating;
 }

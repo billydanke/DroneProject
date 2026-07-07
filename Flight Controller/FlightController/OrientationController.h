@@ -60,11 +60,15 @@ class OrientationController {
     bool Init();
 
     void StartCalibration();
+    void StartGyroscopeCalibration();
     void StartCompassCalibration();
+    bool CalibrateGyroscope();
+    bool CalibrateCompass();
     bool IsCalibrating() const;
     bool IsCalibrationComplete() const;
     bool IsGyroCalibrating() const;
     bool IsCompassCalibrating() const;
+    bool HasValidCompassCalibration() const;
     uint16_t GetGyroCalibrationSampleCount() const;
     uint16_t GetCompassCalibrationSampleCount() const;
     CompassData GetLastCompassData() const;

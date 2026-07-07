@@ -45,6 +45,7 @@ namespace Config {
     constexpr uint8_t QMC5883L_CONTINUOUS_MODE = 0x01;
     constexpr float MAGNETOMETER_YAW_FILTER_TIME_CONSTANT_S = 2.0f;
     constexpr uint16_t MAGNETOMETER_CALIBRATION_SAMPLE_COUNT = 500;
+    constexpr uint32_t MAGNETOMETER_CALIBRATION_TIMEOUT_MS = 60000;
     constexpr float MAGNETOMETER_MIN_VALID_MAGNITUDE = 50.0f;
     constexpr float MAGNETOMETER_MAX_VALID_MAGNITUDE = 30000.0f;
     constexpr float MAGNETOMETER_MIN_CALIBRATION_RANGE = 500.0f;
@@ -54,6 +55,7 @@ namespace Config {
     constexpr uint8_t BMP180_OVERSAMPLING_SETTING = 3;
     constexpr uint16_t BAROMETER_UPDATE_RATE_HZ = 25;
     constexpr uint16_t BAROMETER_CALIBRATION_SAMPLE_COUNT = 100;
+    constexpr uint32_t BAROMETER_CALIBRATION_TIMEOUT_MS = 15000;
     constexpr float STANDARD_SEA_LEVEL_PRESSURE_PA = 101325.0f;
     constexpr float ALTITUDE_FILTER_TIME_CONSTANT_S = 1.0f;
 
@@ -66,6 +68,7 @@ namespace Config {
 
     // Gyroscope calibration
     constexpr uint16_t GYRO_CALIBRATION_SAMPLE_COUNT = 100;
+    constexpr uint32_t GYRO_CALIBRATION_TIMEOUT_MS = 10000;
     constexpr float GYRO_CALIBRATION_MAX_RATE_DEG_S = 20.0f;
     constexpr float GYRO_CALIBRATION_MAX_RATE_DEVIATION_DEG_S = 2.5f;
     constexpr float GYRO_CALIBRATION_ACCEL_TOLERANCE_G = 0.25f;

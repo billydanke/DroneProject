@@ -115,6 +115,10 @@ float OrientationController::WrapAngleErrorDeg(float targetDeg, float measuredDe
 }
 
 void OrientationController::StartCalibration() {
+    StartGyroscopeCalibration();
+}
+
+void OrientationController::StartGyroscopeCalibration() {
     _isOrientationCalibrationComplete = false;
     _isGyroCalibrationComplete = false;
     _isMagnetometerCalibrating = false;
@@ -146,6 +150,87 @@ void OrientationController::StartCompassCalibration() {
     ResetMagnetometerCalibrationSamples();
 }
 
+bool OrientationController::CalibrateGyroscope() {
+    StartGyroscopeCalibration();
+    if (!_isOrientationCalibrating) return false;
+
+    uint32_t calibrationStartMs = millis();
+    uint16_t lastReportedSampleCount = 0;
+
+    while (IsGyroCalibrating()) {
+        Orientation orientation = GetOrientation();
+        if (!orientation.ReadSuccessful) {
+            _isOrientationCalibrating = false;
+            _isOrientationCalibrationComplete = false;
+            return false;
+        }
+
+        uint16_t sampleCount = GetGyroCalibrationSampleCount();
+        constexpr uint16_t calibrationReportInterval = 10;
+        if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
+            Serial.print("Gyroscope calibration samples: ");
+            Serial.print(sampleCount);
+            Serial.print("/");
+            Serial.println(Config::GYRO_CALIBRATION_SAMPLE_COUNT);
+        }
+        lastReportedSampleCount = sampleCount;
+
+        if (millis() - calibrationStartMs > Config::GYRO_CALIBRATION_TIMEOUT_MS) {
+            _isOrientationCalibrating = false;
+            _isOrientationCalibrationComplete = false;
+            return false;
+        }
+
+        delayMicroseconds(1000000UL / Config::LOOP_RATE_HZ);
+    }
+
+    _lastOrientation = Orientation();
+    _lastMeasurementTimeUs = micros();
+    return _isGyroCalibrationComplete;
+}
+
+bool OrientationController::CalibrateCompass() {
+    StartCompassCalibration();
+    if (!_isMagnetometerCalibrating) return false;
+
+    uint32_t calibrationStartMs = millis();
+    uint16_t lastReportedSampleCount = 0;
+
+    while (IsCompassCalibrating()) {
+        Orientation orientation = GetOrientation();
+        if (!orientation.ReadSuccessful) {
+            _isMagnetometerCalibrating = false;
+            _isOrientationCalibrating = false;
+            _isOrientationCalibrationComplete = _isGyroCalibrationComplete;
+            return false;
+        }
+
+        uint16_t sampleCount = GetCompassCalibrationSampleCount();
+        constexpr uint16_t calibrationReportInterval = 50;
+        if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
+            Serial.print("Compass calibration samples: ");
+            Serial.print(sampleCount);
+            Serial.print("/");
+            Serial.println(Config::MAGNETOMETER_CALIBRATION_SAMPLE_COUNT);
+        }
+        lastReportedSampleCount = sampleCount;
+
+        if (millis() - calibrationStartMs > Config::MAGNETOMETER_CALIBRATION_TIMEOUT_MS) {
+            _isMagnetometerCalibrating = false;
+            _isOrientationCalibrating = false;
+            _isOrientationCalibrationComplete = _isGyroCalibrationComplete;
+            _hasCompassYawReference = false;
+            return false;
+        }
+
+        delay(10);
+    }
+
+    _hasCompassYawReference = false;
+    _lastMeasurementTimeUs = micros();
+    return _isMagnetometerCalibrationComplete;
+}
+
 bool OrientationController::IsCalibrating() const {
     return _isOrientationCalibrating;
 }
@@ -160,6 +245,10 @@ bool OrientationController::IsGyroCalibrating() const {
 
 bool OrientationController::IsCompassCalibrating() const {
     return _isMagnetometerCalibrating;
+}
+
+bool OrientationController::HasValidCompassCalibration() const {
+    return _isCompassInitialized && _isMagnetometerCalibrationComplete;
 }
 
 uint16_t OrientationController::GetGyroCalibrationSampleCount() const {
@@ -229,9 +318,9 @@ void OrientationController::UpdateGyroCalibration(const IMUData& data) {
     _gyroBiasY = _gyroCalibrationSumY / sampleCount;
     _gyroBiasZ = _gyroCalibrationSumZ / sampleCount;
     _isGyroCalibrationComplete = true;
-    _isMagnetometerCalibrating = _isCompassInitialized && !_isMagnetometerCalibrationComplete;
-    _isOrientationCalibrationComplete = !_isMagnetometerCalibrating;
-    _isOrientationCalibrating = !_isOrientationCalibrationComplete;
+    _isMagnetometerCalibrating = false;
+    _isOrientationCalibrationComplete = true;
+    _isOrientationCalibrating = false;
     _lastOrientation = Orientation();
     _lastMeasurementTimeUs = micros();
 }
