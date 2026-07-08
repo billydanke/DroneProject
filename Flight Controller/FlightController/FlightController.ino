@@ -8,9 +8,11 @@
 #include "GPSHandler.h"
 #include "MotorController.h"
 #include "OrientationController.h"
+#include "WirelessCommandHandler.h"
 
 FlightState flightState;
 CommandHandler commandHandler;
+WirelessCommandHandler wirelessCommandHandler(commandHandler);
 AltitudeHandler altitudeHandler;
 GPSHandler gpsHandler;
 OrientationController orientationController;
@@ -28,6 +30,7 @@ void setup() {
 
     // Initialize sensors, motors, etc.
     bool motorsInitialized = motorController.Init();
+    bool wirelessInitialized = wirelessCommandHandler.Init();
     bool orientationInitialized = orientationController.Init();
     altitudeInitialized = altitudeHandler.Init();
     gpsInitialized = gpsHandler.Init();
@@ -37,6 +40,15 @@ void setup() {
 
     if (!motorsInitialized) {
         Serial.println("ERROR: Failed to initialize DShot motor outputs.");
+        sleep(2);
+    }
+
+    if (wirelessInitialized) {
+        Serial.print("Wireless command AP initialized at ws://");
+        Serial.print(WiFi.softAPIP());
+        Serial.println("/commands");
+    } else {
+        Serial.println("ERROR: Failed to initialize wireless command AP.");
         sleep(2);
     }
 
@@ -89,6 +101,7 @@ void setup() {
 void loop() {
 
     commandHandler.Update();
+    wirelessCommandHandler.Update();
     gpsHandler.Update();
 
     if (commandHandler.ConsumeCompassCalibrationRequest()) {
@@ -137,7 +150,7 @@ void loop() {
     BarometerData altitude = altitudeHandler.GetAltitude();
     GPSData gps = gpsHandler.GetGPSData();
 
-    Serial.print("Roll: ");
+    /*Serial.print("Roll: ");
     Serial.print(orientation.RollDeg);
     Serial.print("\tPitch: ");
     Serial.print(orientation.PitchDeg);
@@ -170,7 +183,7 @@ void loop() {
         Serial.print("no fix\tSats:");
         Serial.print(gps.SatellitesConnectedCount);
     }
-    Serial.println();
+    Serial.println();*/
 
     PilotCommand pilotCommand = commandHandler.GetCommand();
 
@@ -245,7 +258,7 @@ void loop() {
     }
 
     MotorOutput currentMotorOutput = motorController.GetCurrentMotorOutput();
-    Serial.print("M1:");
+    /*Serial.print("M1:");
     Serial.print(currentMotorOutput.Motor1Power);
     Serial.print("\tM2:");
     Serial.print(currentMotorOutput.Motor2Power);
@@ -253,7 +266,7 @@ void loop() {
     Serial.print(currentMotorOutput.Motor3Power);
     Serial.print("\tM4:");
     Serial.println(currentMotorOutput.Motor4Power);
-    Serial.println();
+    Serial.println();*/
 
     // Transmit whatever information is necessary back to user (battery, altitude, etc).
 

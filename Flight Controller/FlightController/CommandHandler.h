@@ -12,12 +12,13 @@ class CommandHandler {
     bool _compassCalibrationRequested = false;
     bool _altitudeCalibrationRequested = false;
 
-    void ParseCommand(const char* line);
+    bool ParseCommand(const char* line);
 
     public:
     CommandHandler();
 
     void Update();
+    bool SubmitLine(const char* line);
     PilotCommand GetCommand() const;
     bool ConsumeCompassCalibrationRequest();
     bool ConsumeAltitudeCalibrationRequest();

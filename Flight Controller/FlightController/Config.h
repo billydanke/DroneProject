@@ -7,6 +7,17 @@ namespace Config {
     constexpr unsigned long SERIAL_BAUD = 115200;
     constexpr uint32_t LOOP_RATE_HZ = 400;
 
+    // Wireless command link. The WebSocket server listens on ws://192.168.4.1/commands in AP mode.
+    constexpr const char* WIFI_ACCESS_POINT_SSID = "DroneFC-Setup";
+    constexpr const char* WIFI_ACCESS_POINT_PASSWORD = "dronepass";
+    constexpr uint8_t WIFI_ACCESS_POINT_CHANNEL = 6;
+    constexpr uint8_t WIFI_ACCESS_POINT_MAX_CLIENTS = 1;
+    constexpr uint16_t WEBSOCKET_SERVER_PORT = 80;
+    constexpr uint16_t WEBSOCKET_HANDSHAKE_BUFFER_SIZE = 512;
+    constexpr uint16_t WEBSOCKET_MAX_TEXT_PAYLOAD_SIZE = 95;
+    constexpr uint16_t WEBSOCKET_MAX_BYTES_PER_UPDATE = 96;
+    constexpr uint32_t WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 2000;
+
     // Shared I2C Bus
     constexpr int I2C_SDA_PIN = 21;
     constexpr int I2C_SCL_PIN = 22;
