@@ -94,13 +94,16 @@ void loop() {
     if (commandHandler.ConsumeCompassCalibrationRequest()) {
         if (flightState.IsArmed) {
             Serial.println("ERROR: Compass calibration request denied while armed.");
+            sleep(2);
         } else {
             motorController.Disarm();
             Serial.println("Rotate the drone through roll, pitch, and yaw while the compass calibrates.");
             if (orientationController.CalibrateCompass()) {
                 Serial.println("Compass calibration complete.");
+                sleep(2);
             } else {
                 Serial.println("ERROR: Compass calibration failed.");
+                sleep(2);
             }
         }
     }
@@ -108,13 +111,16 @@ void loop() {
     if (commandHandler.ConsumeAltitudeCalibrationRequest()) {
         if (flightState.IsArmed) {
             Serial.println("ERROR: Altitude calibration request denied while armed.");
+            sleep(2);
         } else {
             motorController.Disarm();
             Serial.println("Keep the drone at takeoff altitude while the barometer calibrates.");
             if (altitudeHandler.CalibrateBarometer()) {
                 Serial.println("Altitude calibration complete.");
+                sleep(2);
             } else {
                 Serial.println("ERROR: Altitude calibration failed.");
+                sleep(2);
             }
         }
     }

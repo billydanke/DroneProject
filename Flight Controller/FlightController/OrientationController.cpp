@@ -223,7 +223,7 @@ bool OrientationController::CalibrateCompass() {
             return false;
         }
 
-        delay(10);
+        delay(50);
     }
 
     _hasCompassYawReference = false;
