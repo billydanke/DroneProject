@@ -29,11 +29,11 @@ namespace Config {
     constexpr int I2C_SCL_PIN = 22;
     constexpr uint32_t I2C_CLOCK_HZ = 100000;
 
-    // ESC PWM Pins
-    constexpr int MOTOR_1_PIN = 27;
-    constexpr int MOTOR_2_PIN = 26;
+    // ESC signal pins
+    constexpr int MOTOR_1_PIN = 26;
+    constexpr int MOTOR_2_PIN = 33;
     constexpr int MOTOR_3_PIN = 25;
-    constexpr int MOTOR_4_PIN = 33;
+    constexpr int MOTOR_4_PIN = 27;
 
     constexpr uint16_t DSHOT_THROTTLE_MIN = 48;   // Values 1-47 are special ESC commands.
     constexpr uint16_t DSHOT_THROTTLE_MAX = 2047;
