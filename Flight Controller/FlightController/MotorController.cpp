@@ -5,22 +5,22 @@ namespace {
     // Front-left, CW
     constexpr float MOTOR_1_ROLL_MIX = 1.0f;
     constexpr float MOTOR_1_PITCH_MIX = -1.0f;
-    constexpr float MOTOR_1_YAW_MIX = 1.0f;
+    constexpr float MOTOR_1_YAW_MIX = -1.0f;
 
     // Front-right, CCW
     constexpr float MOTOR_2_ROLL_MIX = -1.0f;
     constexpr float MOTOR_2_PITCH_MIX = -1.0f;
-    constexpr float MOTOR_2_YAW_MIX = -1.0f;
+    constexpr float MOTOR_2_YAW_MIX = 1.0f;
 
     // Back-right, CW
     constexpr float MOTOR_3_ROLL_MIX = -1.0f;
     constexpr float MOTOR_3_PITCH_MIX = 1.0f;
-    constexpr float MOTOR_3_YAW_MIX = 1.0f;
+    constexpr float MOTOR_3_YAW_MIX = -1.0f;
 
     // Back-left, CCW
     constexpr float MOTOR_4_ROLL_MIX = 1.0f;
     constexpr float MOTOR_4_PITCH_MIX = 1.0f;
-    constexpr float MOTOR_4_YAW_MIX = -1.0f;
+    constexpr float MOTOR_4_YAW_MIX = 1.0f;
 
     float GetMinimum(const float values[], size_t count) {
         float minimum = values[0];

@@ -38,9 +38,9 @@ namespace Config {
     constexpr uint16_t DSHOT_THROTTLE_MIN = 48;   // Values 1-47 are special ESC commands.
     constexpr uint16_t DSHOT_THROTTLE_MAX = 2047;
     constexpr float MOTOR_CONTROLLER_MAX_DT_S = 0.05f;
-    constexpr float MOTOR_ARM_MAX_THROTTLE = 0.05f;
-    constexpr float MOTOR_CONTROL_MIN_THROTTLE = 0.05f;
-    constexpr float MOTOR_TEST_THROTTLE = 0.06f;
+    constexpr float MOTOR_ARM_MAX_THROTTLE = 0.01f;
+    constexpr float MOTOR_CONTROL_MIN_THROTTLE = 0.02f;
+    constexpr float MOTOR_TEST_THROTTLE = 0.02f;
     constexpr uint32_t MOTOR_TEST_DURATION_MS = 1000;
 
     // Angle Limits
@@ -109,6 +109,6 @@ namespace Config {
     constexpr float PITCH_ANGLE_KD = 0.00003f;
 
     constexpr float YAW_RATE_KP = 0.0008f;
-    constexpr float YAW_RATE_KI = 0.001f;
+    constexpr float YAW_RATE_KI = 0.000f;
     constexpr float YAW_RATE_KD = 0.00003f;
 }
