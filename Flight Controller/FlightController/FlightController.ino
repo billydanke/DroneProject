@@ -20,6 +20,7 @@ OrientationController orientationController;
 MotorController motorController(flightState);
 bool altitudeInitialized = false;
 bool gpsInitialized = false;
+bool emergencyStopActive = false;
 
 void ServiceWirelessDiagnostics() {
     wirelessCommandHandler.Update();
@@ -115,6 +116,36 @@ void loop() {
     if (commandHandler.ConsumeDisableDebugSerialRequest()) {
         DiagnosticLogger::Log("status:debug_serial_disabled");
         DiagnosticLogger::SetSerialEnabled(false);
+    }
+
+    bool emergencyStopRequested = commandHandler.ConsumeEmergencyStopRequest();
+    bool emergencyStopReleaseRequested = commandHandler.ConsumeEmergencyStopReleaseRequest();
+    bool disarmRequested = commandHandler.ConsumeDisarmRequest();
+    bool armRequested = commandHandler.ConsumeArmRequest();
+
+    if (emergencyStopRequested) {
+        emergencyStopActive = true;
+        motorController.EmergencyStop();
+        DiagnosticLogger::Log("status:estop_triggered");
+        return;
+    }
+
+    if (emergencyStopReleaseRequested) {
+        emergencyStopActive = false;
+        motorController.Disarm();
+        DiagnosticLogger::Log("status:estop_released:motors_disarmed");
+        return;
+    }
+
+    if (emergencyStopActive) {
+        motorController.EmergencyStop();
+        return;
+    }
+
+    if (disarmRequested) {
+        motorController.Disarm();
+        DiagnosticLogger::Log("status:motors_disarmed");
+        return;
     }
 
     if (commandHandler.ConsumeGyroscopeCalibrationRequest()) {
@@ -219,18 +250,13 @@ void loop() {
 
     float throttle = constrain(pilotCommand.ThrottlePercent / 100.0f, 0.0f, 1.0f);
 
-    if (pilotCommand.DoEStop) {
-        motorController.EmergencyStop();
-        return;
-    }
-
     static float targetYawDeg = 0.0f;
     static bool targetYawCaptured = false;
 
     if (!flightState.IsArmed) {
         targetYawCaptured = false;
 
-        if (!pilotCommand.DoArm) return;
+        if (!armRequested) return;
 
         if (!orientationController.IsCalibrationComplete()) {
             DiagnosticLogger::Log("error:arm_denied:gyro_calibration_required");
@@ -256,11 +282,6 @@ void loop() {
         targetYawCaptured = true;
         DiagnosticLogger::Log("status:motors_armed");
 
-    } else if (!pilotCommand.DoArm) {
-        motorController.Disarm();
-        targetYawCaptured = false;
-        DiagnosticLogger::Log("status:motors_disarmed");
-        return;
     }
 
     if (!targetYawCaptured) {

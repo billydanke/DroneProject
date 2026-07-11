@@ -14,6 +14,10 @@ class CommandHandler {
     bool _gyroscopeCalibrationRequested = false;
     bool _enableDebugSerialRequested = false;
     bool _disableDebugSerialRequested = false;
+    bool _armRequested = false;
+    bool _disarmRequested = false;
+    bool _emergencyStopRequested = false;
+    bool _emergencyStopReleaseRequested = false;
 
     bool ParseCommand(const char* line);
 
@@ -28,4 +32,8 @@ class CommandHandler {
     bool ConsumeGyroscopeCalibrationRequest();
     bool ConsumeEnableDebugSerialRequest();
     bool ConsumeDisableDebugSerialRequest();
+    bool ConsumeArmRequest();
+    bool ConsumeDisarmRequest();
+    bool ConsumeEmergencyStopRequest();
+    bool ConsumeEmergencyStopReleaseRequest();
 };

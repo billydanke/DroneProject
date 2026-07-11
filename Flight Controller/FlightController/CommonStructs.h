@@ -76,9 +76,6 @@ struct PilotCommand {
     float RollDeg = 0.0f;
     float PitchDeg = 0.0f;
     float YawRateDegS = 0.0f;
-
-    bool DoArm = false;
-    bool DoEStop = false;
 };
 
 struct FlightState {

@@ -55,25 +55,40 @@ bool CommandHandler::ParseCommand(const char* line) {
         return true;
     }
 
+    if (strcmp(line, "arm") == 0) {
+        _armRequested = true;
+        return true;
+    }
+
+    if (strcmp(line, "disarm") == 0) {
+        _disarmRequested = true;
+        return true;
+    }
+
+    if (strcmp(line, "trigger-estop") == 0) {
+        _emergencyStopRequested = true;
+        return true;
+    }
+
+    if (strcmp(line, "release-estop") == 0) {
+        _emergencyStopReleaseRequested = true;
+        return true;
+    }
+
     float throttle, roll, pitch, yawRate;
-    int arm, estop;
     char trailing;
 
-    int parsed = sscanf(line, " %f , %f , %f , %f , %d , %d %c", &throttle, &roll, &pitch, &yawRate, &arm, &estop, &trailing);
+    int parsed = sscanf(line, " %f , %f , %f , %f %c", &throttle, &roll, &pitch, &yawRate, &trailing);
 
-    if (parsed != 6) return false;
+    if (parsed != 4) return false;
 
     if (!isfinite(throttle) || !isfinite(roll) || !isfinite(pitch) || !isfinite(yawRate)) return false;
     if (throttle < 0.0f || throttle > 100.0f) return false;
-    if ((arm != 0 && arm != 1) || (estop != 0 && estop != 1)) return false;
 
     _currentCommand.ThrottlePercent = throttle;
     _currentCommand.RollDeg = roll;
     _currentCommand.PitchDeg = pitch;
     _currentCommand.YawRateDegS = yawRate;
-    _currentCommand.DoArm = arm != 0;
-    _currentCommand.DoEStop = estop != 0;
-
     return true;
 }
 
@@ -108,5 +123,29 @@ bool CommandHandler::ConsumeEnableDebugSerialRequest() {
 bool CommandHandler::ConsumeDisableDebugSerialRequest() {
     bool requested = _disableDebugSerialRequested;
     _disableDebugSerialRequested = false;
+    return requested;
+}
+
+bool CommandHandler::ConsumeArmRequest() {
+    bool requested = _armRequested;
+    _armRequested = false;
+    return requested;
+}
+
+bool CommandHandler::ConsumeDisarmRequest() {
+    bool requested = _disarmRequested;
+    _disarmRequested = false;
+    return requested;
+}
+
+bool CommandHandler::ConsumeEmergencyStopRequest() {
+    bool requested = _emergencyStopRequested;
+    _emergencyStopRequested = false;
+    return requested;
+}
+
+bool CommandHandler::ConsumeEmergencyStopReleaseRequest() {
+    bool requested = _emergencyStopReleaseRequested;
+    _emergencyStopReleaseRequested = false;
     return requested;
 }
