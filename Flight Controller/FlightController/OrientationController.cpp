@@ -1,4 +1,5 @@
 #include "OrientationController.h"
+#include "DiagnosticLogger.h"
 #include <Arduino.h>
 #include <float.h>
 #include <Preferences.h>
@@ -57,13 +58,13 @@ bool OrientationController::Init() {
     Wire.write(0x00);
     if (Wire.endTransmission(true) != 0) return false;
 
-    Serial.println("[OrientationController] MPU Communication Success!");
+    DiagnosticLogger::Log("status:mpu_connected");
 
     if (!InitCompass()) return false;
     if (LoadMagnetometerCalibration()) {
-        Serial.println("Loaded saved compass calibration.");
+        DiagnosticLogger::Log("status:compass_calibration_loaded");
     } else {
-        Serial.println("No saved compass calibration found; compass calibration required.");
+        DiagnosticLogger::Log("warning:compass_calibration_required");
     }
 
     _lastMeasurementTimeUs = micros();
@@ -80,7 +81,7 @@ bool OrientationController::InitCompass() {
     uint8_t controlValue = Config::QMC5883L_OVERSAMPLING_512 | Config::QMC5883L_RANGE_2G | Config::QMC5883L_OUTPUT_RATE_100_HZ | Config::QMC5883L_CONTINUOUS_MODE;
     if (!WriteCompassRegister(QMC_CONTROL_1_REGISTER, controlValue)) return false;
 
-    Serial.println("[OrientationController] Magnetometer Communication Success!");
+    DiagnosticLogger::Log("status:magnetometer_connected");
     _isCompassInitialized = true;
     return true;
 }
@@ -153,7 +154,7 @@ void OrientationController::StartCompassCalibration() {
     ResetMagnetometerCalibrationSamples();
 }
 
-bool OrientationController::CalibrateGyroscope() {
+bool OrientationController::CalibrateGyroscope(void (*serviceCallback)()) {
     StartGyroscopeCalibration();
     if (!_isOrientationCalibrating) return false;
 
@@ -171,12 +172,11 @@ bool OrientationController::CalibrateGyroscope() {
         uint16_t sampleCount = GetGyroCalibrationSampleCount();
         constexpr uint16_t calibrationReportInterval = 10;
         if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
-            Serial.print("Gyroscope calibration samples: ");
-            Serial.print(sampleCount);
-            Serial.print("/");
-            Serial.println(Config::GYRO_CALIBRATION_SAMPLE_COUNT);
+            DiagnosticLogger::LogProgress("gyro", sampleCount, Config::GYRO_CALIBRATION_SAMPLE_COUNT);
         }
         lastReportedSampleCount = sampleCount;
+
+        if (serviceCallback != nullptr) serviceCallback();
 
         if (millis() - calibrationStartMs > Config::GYRO_CALIBRATION_TIMEOUT_MS) {
             _isOrientationCalibrating = false;
@@ -192,7 +192,7 @@ bool OrientationController::CalibrateGyroscope() {
     return _isGyroCalibrationComplete;
 }
 
-bool OrientationController::CalibrateCompass() {
+bool OrientationController::CalibrateCompass(void (*serviceCallback)()) {
     StartCompassCalibration();
     if (!_isMagnetometerCalibrating) return false;
 
@@ -211,12 +211,11 @@ bool OrientationController::CalibrateCompass() {
         uint16_t sampleCount = GetCompassCalibrationSampleCount();
         constexpr uint16_t calibrationReportInterval = 50;
         if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
-            Serial.print("Compass calibration samples: ");
-            Serial.print(sampleCount);
-            Serial.print("/");
-            Serial.println(Config::MAGNETOMETER_CALIBRATION_SAMPLE_COUNT);
+            DiagnosticLogger::LogProgress("compass", sampleCount, Config::MAGNETOMETER_CALIBRATION_SAMPLE_COUNT);
         }
         lastReportedSampleCount = sampleCount;
+
+        if (serviceCallback != nullptr) serviceCallback();
 
         if (millis() - calibrationStartMs > Config::MAGNETOMETER_CALIBRATION_TIMEOUT_MS) {
             _isMagnetometerCalibrating = false;
@@ -433,7 +432,7 @@ void OrientationController::UpdateMagnetometerCalibration(const CompassData& dat
     float radiusZ = (_magnetometerMaxZ - _magnetometerMinZ) * 0.5f;
 
     if (radiusX < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE || radiusY < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE || radiusZ < Config::MAGNETOMETER_MIN_CALIBRATION_RANGE) {
-        Serial.println("Compass calibration range too small; rotate through more roll, pitch, and yaw.");
+        DiagnosticLogger::Log("warning:compass_calibration_range_too_small");
         ResetMagnetometerCalibrationSamples();
         return;
     }
@@ -453,9 +452,9 @@ void OrientationController::UpdateMagnetometerCalibration(const CompassData& dat
     _isOrientationCalibrationComplete = true;
     _hasCompassYawReference = false;
     if (SaveMagnetometerCalibration()) {
-        Serial.println("Saved compass calibration.");
+        DiagnosticLogger::Log("status:compass_calibration_saved");
     } else {
-        Serial.println("ERROR: Failed to save compass calibration.");
+        DiagnosticLogger::Log("error:compass_calibration_save_failed");
     }
     _lastCompassData = ApplyMagnetometerCalibration(data);
     _lastMeasurementTimeUs = micros();

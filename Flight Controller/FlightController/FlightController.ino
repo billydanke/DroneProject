@@ -5,6 +5,7 @@
 #include "CommonStructs.h"
 #include "AltitudeHandler.h"
 #include "CommandHandler.h"
+#include "DiagnosticLogger.h"
 #include "GPSHandler.h"
 #include "MotorController.h"
 #include "OrientationController.h"
@@ -20,10 +21,14 @@ MotorController motorController(flightState);
 bool altitudeInitialized = false;
 bool gpsInitialized = false;
 
+void ServiceWirelessDiagnostics() {
+    wirelessCommandHandler.Update();
+}
+
 void setup() {
     Serial.begin(Config::SERIAL_BAUD);
     delay(100);
-    Serial.println("Initializing Flight Controller...");
+    DiagnosticLogger::Log("status:flight_controller_initializing");
 
     Wire.begin(Config::I2C_SDA_PIN, Config::I2C_SCL_PIN);
     Wire.setClock(Config::I2C_CLOCK_HZ);
@@ -39,61 +44,59 @@ void setup() {
     sleep(5);
 
     if (!motorsInitialized) {
-        Serial.println("ERROR: Failed to initialize DShot motor outputs.");
+        DiagnosticLogger::Log("error:motor_output_initialization_failed");
         sleep(2);
     }
 
     if (wirelessInitialized) {
-        Serial.print("Wireless command AP initialized at ws://");
-        Serial.print(WiFi.softAPIP());
-        Serial.println("/commands");
+        DiagnosticLogger::Logf("status:wireless_ready:ws://%s/commands", WiFi.softAPIP().toString().c_str());
     } else {
-        Serial.println("ERROR: Failed to initialize wireless command AP.");
+        DiagnosticLogger::Log("error:wireless_initialization_failed");
         sleep(2);
     }
 
     if (orientationInitialized) {
-        Serial.println("Keep the drone still while the gyroscope calibrates.");
-        if (orientationController.CalibrateGyroscope()) {
-            Serial.println("Gyroscope calibration complete.");
+        DiagnosticLogger::Log("status:gyro_calibration_started:keep_still");
+        if (orientationController.CalibrateGyroscope(ServiceWirelessDiagnostics)) {
+            DiagnosticLogger::Log("status:gyro_calibration_complete");
         } else {
             startupCalibrationSuccessful = false;
-            Serial.println("ERROR: Gyroscope calibration failed.");
+            DiagnosticLogger::Log("error:gyro_calibration_failed");
             sleep(2);
         }
 
         if (!orientationController.HasValidCompassCalibration()) {
-            Serial.println("Compass calibration required before arming. Send 'calibrate-compass' while disarmed.");
+            DiagnosticLogger::Log("warning:compass_calibration_required:send_calibrate-compass_while_disarmed");
         }
     } else {
-        Serial.println("ERROR: Failed to initialize orientation sensors over I2C.");
+        DiagnosticLogger::Log("error:orientation_sensor_initialization_failed");
         sleep(2);
     }
 
     if (altitudeInitialized) {
-        Serial.println("BMP180 barometer initialized.");
-        Serial.println("Keep the drone at takeoff altitude while the barometer calibrates.");
-        if (altitudeHandler.CalibrateBarometer()) {
-            Serial.println("Altitude calibration complete.");
+        DiagnosticLogger::Log("status:barometer_initialized");
+        DiagnosticLogger::Log("status:altitude_calibration_started:hold_takeoff_altitude");
+        if (altitudeHandler.CalibrateBarometer(ServiceWirelessDiagnostics)) {
+            DiagnosticLogger::Log("status:altitude_calibration_complete");
         } else {
             startupCalibrationSuccessful = false;
-            Serial.println("ERROR: Barometer calibration failed.");
+            DiagnosticLogger::Log("error:altitude_calibration_failed");
             sleep(2);
         }
     } else {
-        Serial.println("ERROR: Failed to initialize BMP180 barometer over I2C.");
+        DiagnosticLogger::Log("error:barometer_initialization_failed");
         sleep(2);
     }
 
     if (gpsInitialized) {
-        Serial.println("GPS UART initialized.");
+        DiagnosticLogger::Log("status:gps_initialized");
     } else {
-        Serial.println("ERROR: Failed to initialize GPS UART.");
+        DiagnosticLogger::Log("error:gps_initialization_failed");
         sleep(2);
     }
 
     if (motorsInitialized && orientationInitialized && altitudeInitialized && startupCalibrationSuccessful) {
-        Serial.println("Flight Controller initialized!");
+        DiagnosticLogger::Log("status:flight_controller_initialized");
         sleep(2);
     }
 }
@@ -104,18 +107,45 @@ void loop() {
     wirelessCommandHandler.Update();
     gpsHandler.Update();
 
-    if (commandHandler.ConsumeCompassCalibrationRequest()) {
+    if (commandHandler.ConsumeEnableDebugSerialRequest()) {
+        DiagnosticLogger::SetSerialEnabled(true);
+        DiagnosticLogger::Log("status:debug_serial_enabled");
+    }
+
+    if (commandHandler.ConsumeDisableDebugSerialRequest()) {
+        DiagnosticLogger::Log("status:debug_serial_disabled");
+        DiagnosticLogger::SetSerialEnabled(false);
+    }
+
+    if (commandHandler.ConsumeGyroscopeCalibrationRequest()) {
         if (flightState.IsArmed) {
-            Serial.println("ERROR: Compass calibration request denied while armed.");
+            DiagnosticLogger::Log("error:gyro_calibration_denied:armed");
             sleep(2);
         } else {
             motorController.Disarm();
-            Serial.println("Rotate the drone through roll, pitch, and yaw while the compass calibrates.");
-            if (orientationController.CalibrateCompass()) {
-                Serial.println("Compass calibration complete.");
+            DiagnosticLogger::Log("status:gyro_calibration_started:keep_still");
+            if (orientationController.CalibrateGyroscope(ServiceWirelessDiagnostics)) {
+                DiagnosticLogger::Log("status:gyro_calibration_complete");
                 sleep(2);
             } else {
-                Serial.println("ERROR: Compass calibration failed.");
+                DiagnosticLogger::Log("error:gyro_calibration_failed");
+                sleep(2);
+            }
+        }
+    }
+
+    if (commandHandler.ConsumeCompassCalibrationRequest()) {
+        if (flightState.IsArmed) {
+            DiagnosticLogger::Log("error:compass_calibration_denied:armed");
+            sleep(2);
+        } else {
+            motorController.Disarm();
+            DiagnosticLogger::Log("status:compass_calibration_started:rotate_roll_pitch_yaw");
+            if (orientationController.CalibrateCompass(ServiceWirelessDiagnostics)) {
+                DiagnosticLogger::Log("status:compass_calibration_complete");
+                sleep(2);
+            } else {
+                DiagnosticLogger::Log("error:compass_calibration_failed");
                 sleep(2);
             }
         }
@@ -123,16 +153,16 @@ void loop() {
 
     if (commandHandler.ConsumeAltitudeCalibrationRequest()) {
         if (flightState.IsArmed) {
-            Serial.println("ERROR: Altitude calibration request denied while armed.");
+            DiagnosticLogger::Log("error:altitude_calibration_denied:armed");
             sleep(2);
         } else {
             motorController.Disarm();
-            Serial.println("Keep the drone at takeoff altitude while the barometer calibrates.");
-            if (altitudeHandler.CalibrateBarometer()) {
-                Serial.println("Altitude calibration complete.");
+            DiagnosticLogger::Log("status:altitude_calibration_started:hold_takeoff_altitude");
+            if (altitudeHandler.CalibrateBarometer(ServiceWirelessDiagnostics)) {
+                DiagnosticLogger::Log("status:altitude_calibration_complete");
                 sleep(2);
             } else {
-                Serial.println("ERROR: Altitude calibration failed.");
+                DiagnosticLogger::Log("error:altitude_calibration_failed");
                 sleep(2);
             }
         }
@@ -142,7 +172,7 @@ void loop() {
     Orientation orientation = orientationController.GetOrientation();
     if (!orientation.ReadSuccessful) {
         motorController.EmergencyStop();
-        Serial.println("ERROR: Failed to read IMU data.");
+        DiagnosticLogger::Log("error:imu_read_failed");
         sleep(1);
         return;
     }
@@ -203,33 +233,33 @@ void loop() {
         if (!pilotCommand.DoArm) return;
 
         if (!orientationController.IsCalibrationComplete()) {
-            Serial.println("ERROR: Arm request denied; gyroscope calibration required.");
+            DiagnosticLogger::Log("error:arm_denied:gyro_calibration_required");
             return;
         }
 
         if (!orientationController.HasValidCompassCalibration()) {
-            Serial.println("ERROR: Arm request denied; compass calibration required.");
+            DiagnosticLogger::Log("error:arm_denied:compass_calibration_required");
             return;
         }
 
         if (altitudeInitialized && !altitudeHandler.IsCalibrationComplete()) {
-            Serial.println("ERROR: Arm request denied; altitude calibration required.");
+            DiagnosticLogger::Log("error:arm_denied:altitude_calibration_required");
             return;
         }
 
         if (!motorController.Arm(throttle)) {
-            Serial.println("ERROR: Motor arm request denied.");
+            DiagnosticLogger::Log("error:arm_denied:motor_controller");
             return;
         }
 
         targetYawDeg = orientation.YawDeg;
         targetYawCaptured = true;
-        Serial.println("Motors armed.");
+        DiagnosticLogger::Log("status:motors_armed");
 
     } else if (!pilotCommand.DoArm) {
         motorController.Disarm();
         targetYawCaptured = false;
-        Serial.println("Motors disarmed.");
+        DiagnosticLogger::Log("status:motors_disarmed");
         return;
     }
 
@@ -254,7 +284,7 @@ void loop() {
     };
 
     if (!motorController.UpdateMotorOutputs(throttle, orientation, targetOrientation)) {
-        Serial.println("ERROR: Motor update failed; motors disarmed.");
+        DiagnosticLogger::Log("error:motor_update_failed:motors_disarmed");
     }
 
     MotorOutput currentMotorOutput = motorController.GetCurrentMotorOutput();

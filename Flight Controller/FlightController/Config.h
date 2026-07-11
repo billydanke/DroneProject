@@ -16,7 +16,13 @@ namespace Config {
     constexpr uint16_t WEBSOCKET_HANDSHAKE_BUFFER_SIZE = 512;
     constexpr uint16_t WEBSOCKET_MAX_TEXT_PAYLOAD_SIZE = 95;
     constexpr uint16_t WEBSOCKET_MAX_BYTES_PER_UPDATE = 96;
+    constexpr uint16_t WEBSOCKET_MAX_DIAGNOSTIC_BYTES_PER_UPDATE = 96;
+    constexpr uint32_t WEBSOCKET_DIAGNOSTIC_SEND_INTERVAL_MS = 20;
     constexpr uint32_t WEBSOCKET_HANDSHAKE_TIMEOUT_MS = 2000;
+
+    constexpr bool DIAGNOSTIC_SERIAL_ENABLED = false;
+    constexpr uint8_t DIAGNOSTIC_QUEUE_CAPACITY = 16;
+    constexpr uint16_t DIAGNOSTIC_MESSAGE_MAX_LENGTH = 95;
 
     // Shared I2C Bus
     constexpr int I2C_SDA_PIN = 21;
@@ -92,15 +98,15 @@ namespace Config {
     // PID Gain Settings
     // We'll probably have PIDs for roll and pitch to hold the drone's attitude.
     // There will likely be more here but for now I'll add parameters for just the angles (we need to tune these).
-    constexpr float ROLL_ANGLE_KP = 0.00f;
-    constexpr float ROLL_ANGLE_KI = 0.0f;
-    constexpr float ROLL_ANGLE_KD = 0.000f;
+    constexpr float ROLL_ANGLE_KP = 0.0008f;
+    constexpr float ROLL_ANGLE_KI = 0.001f;
+    constexpr float ROLL_ANGLE_KD = 0.00003f;
 
-    constexpr float PITCH_ANGLE_KP = 0.000f;
-    constexpr float PITCH_ANGLE_KI = 0.0f;
-    constexpr float PITCH_ANGLE_KD = 0.000f;
+    constexpr float PITCH_ANGLE_KP = 0.0008f;
+    constexpr float PITCH_ANGLE_KI = 0.001f;
+    constexpr float PITCH_ANGLE_KD = 0.00003f;
 
-    constexpr float YAW_RATE_KP = 0.000f;
-    constexpr float YAW_RATE_KI = 0.0f;
-    constexpr float YAW_RATE_KD = 0.0f;
+    constexpr float YAW_RATE_KP = 0.0008f;
+    constexpr float YAW_RATE_KI = 0.001f;
+    constexpr float YAW_RATE_KD = 0.00003f;
 }

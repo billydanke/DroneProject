@@ -1,4 +1,5 @@
 #include "AltitudeHandler.h"
+#include "DiagnosticLogger.h"
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -57,7 +58,7 @@ void AltitudeHandler::StartCalibration() {
     _hasFilteredAltitude = false;
 }
 
-bool AltitudeHandler::CalibrateBarometer() {
+bool AltitudeHandler::CalibrateBarometer(void (*serviceCallback)()) {
     StartCalibration();
     if (!_isCalibrating) return false;
 
@@ -70,12 +71,11 @@ bool AltitudeHandler::CalibrateBarometer() {
         uint16_t sampleCount = GetCalibrationSampleCount();
         constexpr uint16_t calibrationReportInterval = 10;
         if (sampleCount / calibrationReportInterval != lastReportedSampleCount / calibrationReportInterval) {
-            Serial.print("Altitude calibration samples: ");
-            Serial.print(sampleCount);
-            Serial.print("/");
-            Serial.println(Config::BAROMETER_CALIBRATION_SAMPLE_COUNT);
+            DiagnosticLogger::LogProgress("altitude", sampleCount, Config::BAROMETER_CALIBRATION_SAMPLE_COUNT);
         }
         lastReportedSampleCount = sampleCount;
+
+        if (serviceCallback != nullptr) serviceCallback();
 
         if (millis() - calibrationStartMs > Config::BAROMETER_CALIBRATION_TIMEOUT_MS) {
             _isCalibrating = false;

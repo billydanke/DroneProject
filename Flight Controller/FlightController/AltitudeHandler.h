@@ -61,7 +61,7 @@ class AltitudeHandler {
 
     bool Init();
     void StartCalibration();
-    bool CalibrateBarometer();
+    bool CalibrateBarometer(void (*serviceCallback)() = nullptr);
     bool IsCalibrating() const;
     bool IsCalibrationComplete() const;
     uint16_t GetCalibrationSampleCount() const;

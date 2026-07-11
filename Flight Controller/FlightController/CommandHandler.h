@@ -11,6 +11,9 @@ class CommandHandler {
     uint8_t _bufferIndex = 0;
     bool _compassCalibrationRequested = false;
     bool _altitudeCalibrationRequested = false;
+    bool _gyroscopeCalibrationRequested = false;
+    bool _enableDebugSerialRequested = false;
+    bool _disableDebugSerialRequested = false;
 
     bool ParseCommand(const char* line);
 
@@ -22,4 +25,7 @@ class CommandHandler {
     PilotCommand GetCommand() const;
     bool ConsumeCompassCalibrationRequest();
     bool ConsumeAltitudeCalibrationRequest();
+    bool ConsumeGyroscopeCalibrationRequest();
+    bool ConsumeEnableDebugSerialRequest();
+    bool ConsumeDisableDebugSerialRequest();
 };

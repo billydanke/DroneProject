@@ -44,6 +44,7 @@ class WirelessCommandHandler {
     bool _frameMasked = false;
     bool _discardFrame = false;
     char _payload[Config::WEBSOCKET_MAX_TEXT_PAYLOAD_SIZE + 1];
+    uint32_t _lastDiagnosticSendMs = 0;
 
     void AcceptClient();
     void ProcessHandshake(uint16_t& bytesBudget);
@@ -55,8 +56,9 @@ class WirelessCommandHandler {
     bool IsHandshakeComplete() const;
     bool TryGetWebSocketKey(char* key, size_t keySize) const;
     bool SendHandshakeResponse(const char* webSocketKey);
-    void SendText(const char* text);
-    void SendFrame(uint8_t opcode, const uint8_t* payload, uint16_t payloadLength);
+    bool SendText(const char* text);
+    bool SendFrame(uint8_t opcode, const uint8_t* payload, uint16_t payloadLength);
+    void SendPendingDiagnostic();
     static void Base64Encode(const uint8_t* input, size_t inputLength, char* output, size_t outputSize);
 
     public:

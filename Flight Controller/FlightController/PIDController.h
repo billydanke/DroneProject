@@ -13,7 +13,7 @@ class PIDController {
 
     float _integratorLimit = 0.5f;
     float _outputLimit = 1.0f;
-    float _derivativeFilterTimeConstant = 0.02f;
+    float _derivativeFilterTimeConstant = 0.007f;
 
     public:
     PIDController();

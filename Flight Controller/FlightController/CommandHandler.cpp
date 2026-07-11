@@ -40,6 +40,21 @@ bool CommandHandler::ParseCommand(const char* line) {
         return true;
     }
 
+    if (strcmp(line, "calibrate-gyro") == 0) {
+        _gyroscopeCalibrationRequested = true;
+        return true;
+    }
+
+    if (strcmp(line, "enable-debug-serial") == 0) {
+        _enableDebugSerialRequested = true;
+        return true;
+    }
+
+    if (strcmp(line, "disable-debug-serial") == 0) {
+        _disableDebugSerialRequested = true;
+        return true;
+    }
+
     float throttle, roll, pitch, yawRate;
     int arm, estop;
     char trailing;
@@ -75,5 +90,23 @@ bool CommandHandler::ConsumeCompassCalibrationRequest() {
 bool CommandHandler::ConsumeAltitudeCalibrationRequest() {
     bool requested = _altitudeCalibrationRequested;
     _altitudeCalibrationRequested = false;
+    return requested;
+}
+
+bool CommandHandler::ConsumeGyroscopeCalibrationRequest() {
+    bool requested = _gyroscopeCalibrationRequested;
+    _gyroscopeCalibrationRequested = false;
+    return requested;
+}
+
+bool CommandHandler::ConsumeEnableDebugSerialRequest() {
+    bool requested = _enableDebugSerialRequested;
+    _enableDebugSerialRequested = false;
+    return requested;
+}
+
+bool CommandHandler::ConsumeDisableDebugSerialRequest() {
+    bool requested = _disableDebugSerialRequested;
+    _disableDebugSerialRequested = false;
     return requested;
 }

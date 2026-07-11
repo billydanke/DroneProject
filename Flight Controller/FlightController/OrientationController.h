@@ -62,8 +62,8 @@ class OrientationController {
     void StartCalibration();
     void StartGyroscopeCalibration();
     void StartCompassCalibration();
-    bool CalibrateGyroscope();
-    bool CalibrateCompass();
+    bool CalibrateGyroscope(void (*serviceCallback)() = nullptr);
+    bool CalibrateCompass(void (*serviceCallback)() = nullptr);
     bool IsCalibrating() const;
     bool IsCalibrationComplete() const;
     bool IsGyroCalibrating() const;

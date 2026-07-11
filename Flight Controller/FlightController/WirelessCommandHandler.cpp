@@ -1,5 +1,7 @@
 #include "WirelessCommandHandler.h"
 
+#include "DiagnosticLogger.h"
+
 #include <mbedtls/sha1.h>
 
 namespace {
@@ -74,6 +76,10 @@ void WirelessCommandHandler::Update() {
 
     if (_connectionState == ConnectionState::Connected && bytesBudget > 0) {
         ProcessFrames(bytesBudget);
+    }
+
+    if (_connectionState == ConnectionState::Connected) {
+        SendPendingDiagnostic();
     }
 }
 
@@ -292,12 +298,12 @@ bool WirelessCommandHandler::SendHandshakeResponse(const char* webSocketKey) {
     return true;
 }
 
-void WirelessCommandHandler::SendText(const char* text) {
-    SendFrame(OPCODE_TEXT, reinterpret_cast<const uint8_t*>(text), strlen(text));
+bool WirelessCommandHandler::SendText(const char* text) {
+    return SendFrame(OPCODE_TEXT, reinterpret_cast<const uint8_t*>(text), strlen(text));
 }
 
-void WirelessCommandHandler::SendFrame(uint8_t opcode, const uint8_t* payload, uint16_t payloadLength) {
-    if (!_client || !_client.connected()) return;
+bool WirelessCommandHandler::SendFrame(uint8_t opcode, const uint8_t* payload, uint16_t payloadLength) {
+    if (!_client || !_client.connected()) return false;
 
     uint8_t header[4];
     uint8_t headerLength = 0;
@@ -311,9 +317,29 @@ void WirelessCommandHandler::SendFrame(uint8_t opcode, const uint8_t* payload, u
         header[headerLength++] = static_cast<uint8_t>(payloadLength & 0xFF);
     }
 
-    _client.write(header, headerLength);
+    size_t totalLength = headerLength + payloadLength;
+    if (_client.availableForWrite() < static_cast<int>(totalLength)) return false;
+
+    if (_client.write(header, headerLength) != headerLength) return false;
     if (payloadLength > 0 && payload != nullptr) {
-        _client.write(payload, payloadLength);
+        if (_client.write(payload, payloadLength) != payloadLength) return false;
+    }
+    return true;
+}
+
+void WirelessCommandHandler::SendPendingDiagnostic() {
+    uint32_t now = millis();
+    if (now - _lastDiagnosticSendMs < Config::WEBSOCKET_DIAGNOSTIC_SEND_INTERVAL_MS) return;
+
+    char message[Config::DIAGNOSTIC_MESSAGE_MAX_LENGTH + 1];
+    if (!DiagnosticLogger::Peek(message, sizeof(message))) return;
+
+    size_t messageLength = strlen(message);
+    if (messageLength > Config::WEBSOCKET_MAX_DIAGNOSTIC_BYTES_PER_UPDATE) return;
+
+    if (SendText(message)) {
+        DiagnosticLogger::Pop();
+        _lastDiagnosticSendMs = now;
     }
 }
 
