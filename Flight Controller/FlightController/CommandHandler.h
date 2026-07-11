@@ -18,6 +18,7 @@ class CommandHandler {
     bool _disarmRequested = false;
     bool _emergencyStopRequested = false;
     bool _emergencyStopReleaseRequested = false;
+    uint8_t _motorTestRequested = 0;
 
     bool ParseCommand(const char* line);
 
@@ -36,4 +37,5 @@ class CommandHandler {
     bool ConsumeDisarmRequest();
     bool ConsumeEmergencyStopRequest();
     bool ConsumeEmergencyStopReleaseRequest();
+    uint8_t ConsumeMotorTestRequest();
 };

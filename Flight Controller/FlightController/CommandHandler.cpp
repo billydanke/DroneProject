@@ -75,6 +75,26 @@ bool CommandHandler::ParseCommand(const char* line) {
         return true;
     }
 
+    if (strcmp(line, "test-motor-1") == 0) {
+        _motorTestRequested = 1;
+        return true;
+    }
+
+    if (strcmp(line, "test-motor-2") == 0) {
+        _motorTestRequested = 2;
+        return true;
+    }
+
+    if (strcmp(line, "test-motor-3") == 0) {
+        _motorTestRequested = 3;
+        return true;
+    }
+
+    if (strcmp(line, "test-motor-4") == 0) {
+        _motorTestRequested = 4;
+        return true;
+    }
+
     float throttle, roll, pitch, yawRate;
     char trailing;
 
@@ -148,4 +168,10 @@ bool CommandHandler::ConsumeEmergencyStopReleaseRequest() {
     bool requested = _emergencyStopReleaseRequested;
     _emergencyStopReleaseRequested = false;
     return requested;
+}
+
+uint8_t CommandHandler::ConsumeMotorTestRequest() {
+    uint8_t requestedMotor = _motorTestRequested;
+    _motorTestRequested = 0;
+    return requestedMotor;
 }

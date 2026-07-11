@@ -122,6 +122,7 @@ void loop() {
     bool emergencyStopReleaseRequested = commandHandler.ConsumeEmergencyStopReleaseRequest();
     bool disarmRequested = commandHandler.ConsumeDisarmRequest();
     bool armRequested = commandHandler.ConsumeArmRequest();
+    uint8_t motorTestRequested = commandHandler.ConsumeMotorTestRequest();
 
     if (emergencyStopRequested) {
         emergencyStopActive = true;
@@ -145,6 +146,20 @@ void loop() {
     if (disarmRequested) {
         motorController.Disarm();
         DiagnosticLogger::Log("status:motors_disarmed");
+        return;
+    }
+
+    if (motorTestRequested != 0) {
+        if (!flightState.IsArmed) {
+            DiagnosticLogger::Logf("error:motor_test_denied:not_armed:%u", motorTestRequested);
+        } else {
+            DiagnosticLogger::Logf("status:motor_test_started:%u", motorTestRequested);
+            if (motorController.TestMotor(motorTestRequested)) {
+                DiagnosticLogger::Logf("status:motor_test_complete:%u:motors_disarmed", motorTestRequested);
+            } else {
+                DiagnosticLogger::Logf("error:motor_test_failed:%u", motorTestRequested);
+            }
+        }
         return;
     }
 

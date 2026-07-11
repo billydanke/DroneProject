@@ -99,6 +99,34 @@ void MotorController::EmergencyStop() {
 
 bool MotorController::IsArmed() const { return _flightState.IsArmed; }
 
+bool MotorController::TestMotor(uint8_t motorNumber) {
+    if (!_isInitialized || !_flightState.IsArmed || motorNumber < 1 || motorNumber > 4) {
+        return false;
+    }
+
+    ResetControllers();
+    WriteMinimumOutput();
+
+    MotorOutput testOutput { };
+    switch (motorNumber) {
+        case 1: testOutput.Motor1Power = Config::MOTOR_TEST_THROTTLE; break;
+        case 2: testOutput.Motor2Power = Config::MOTOR_TEST_THROTTLE; break;
+        case 3: testOutput.Motor3Power = Config::MOTOR_TEST_THROTTLE; break;
+        case 4: testOutput.Motor4Power = Config::MOTOR_TEST_THROTTLE; break;
+        default: return false;
+    }
+
+    uint32_t testStartMs = millis();
+    constexpr uint32_t outputPeriodUs = 1000000UL / Config::LOOP_RATE_HZ;
+    while (millis() - testStartMs < Config::MOTOR_TEST_DURATION_MS) {
+        WriteDShotOutput(testOutput);
+        delayMicroseconds(outputPeriodUs);
+    }
+
+    Disarm();
+    return true;
+}
+
 void MotorController::ResetControllers() {
     _rollPID.Reset();
     _pitchPID.Reset();

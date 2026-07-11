@@ -35,6 +35,7 @@ class MotorController {
     void Disarm();
     void EmergencyStop();
     bool IsArmed() const;
+    bool TestMotor(uint8_t motorNumber);
 
     bool UpdateMotorOutputs(float throttle, Orientation currentOrientation, Orientation targetOrientation);
     MotorOutput GetCurrentMotorOutput() const;

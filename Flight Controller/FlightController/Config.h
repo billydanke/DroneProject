@@ -40,6 +40,8 @@ namespace Config {
     constexpr float MOTOR_CONTROLLER_MAX_DT_S = 0.05f;
     constexpr float MOTOR_ARM_MAX_THROTTLE = 0.05f;
     constexpr float MOTOR_CONTROL_MIN_THROTTLE = 0.05f;
+    constexpr float MOTOR_TEST_THROTTLE = 0.06f;
+    constexpr uint32_t MOTOR_TEST_DURATION_MS = 1000;
 
     // Angle Limits
     constexpr float MAX_ROLL_ANGLE_DEG = 25.0f;
