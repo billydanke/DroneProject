@@ -317,9 +317,6 @@ bool WirelessCommandHandler::SendFrame(uint8_t opcode, const uint8_t* payload, u
         header[headerLength++] = static_cast<uint8_t>(payloadLength & 0xFF);
     }
 
-    size_t totalLength = headerLength + payloadLength;
-    if (_client.availableForWrite() < static_cast<int>(totalLength)) return false;
-
     if (_client.write(header, headerLength) != headerLength) return false;
     if (payloadLength > 0 && payload != nullptr) {
         if (_client.write(payload, payloadLength) != payloadLength) return false;
