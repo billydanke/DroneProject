@@ -80,7 +80,7 @@ bool OrientationController::InitCompass() {
     uint8_t controlValue = Config::QMC5883L_OVERSAMPLING_512 | Config::QMC5883L_RANGE_2G | Config::QMC5883L_OUTPUT_RATE_100_HZ | Config::QMC5883L_CONTINUOUS_MODE;
     if (!WriteCompassRegister(QMC_CONTROL_1_REGISTER, controlValue)) return false;
 
-    Serial.println("[OrientationController] Magnetometer Communication Success!");+
+    Serial.println("[OrientationController] Magnetometer Communication Success!");
     _isCompassInitialized = true;
     return true;
 }

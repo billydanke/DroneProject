@@ -92,15 +92,15 @@ namespace Config {
     // PID Gain Settings
     // We'll probably have PIDs for roll and pitch to hold the drone's attitude.
     // There will likely be more here but for now I'll add parameters for just the angles (we need to tune these).
-    constexpr float ROLL_ANGLE_KP = 0.008f;
+    constexpr float ROLL_ANGLE_KP = 0.00f;
     constexpr float ROLL_ANGLE_KI = 0.0f;
-    constexpr float ROLL_ANGLE_KD = 0.0015f;
+    constexpr float ROLL_ANGLE_KD = 0.000f;
 
-    constexpr float PITCH_ANGLE_KP = 0.008f;
+    constexpr float PITCH_ANGLE_KP = 0.000f;
     constexpr float PITCH_ANGLE_KI = 0.0f;
-    constexpr float PITCH_ANGLE_KD = 0.0015f;
+    constexpr float PITCH_ANGLE_KD = 0.000f;
 
-    constexpr float YAW_RATE_KP = 0.002f;
+    constexpr float YAW_RATE_KP = 0.000f;
     constexpr float YAW_RATE_KI = 0.0f;
     constexpr float YAW_RATE_KD = 0.0f;
 }
